@@ -1,0 +1,8 @@
+custom/.env.bak
+custom/.env
+custom/*pycache*
+*.pyc
+env
+credentials.json
+*json
+run.log
