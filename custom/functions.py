@@ -29,14 +29,14 @@ PACKAGE_URL = 'git+https://github.com/kkbankol-ibm/monitor-anomaly@'
 
 class InvokeExternalModel(BasePreload):
     '''
-    Do a HTTP request as a preload activity. Load results of the get into the Entity Type time series table.
-    HTTP request is experimental
+    Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
+    Response returns index of rows that are classified as an anomaly, as well as the confidence score
     '''
 
     out_table_name = None
 
-    # def __init__(self, username, password, request, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
-    def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, uid, password, instance_id, apikey, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
         if body is None:
             body = {}
 
@@ -50,26 +50,19 @@ class InvokeExternalModel(BasePreload):
 
         # create an instance variable with the IBM IOT Platform Analytics Service Function input arguments.
 
-        # self.username = username
-        # logging.debug('self.username %s' %self.username)
-        # self.url = url
-        # self.password = password
-        # logging.debug('self.password %s' %self.password)
-        # # self.tenant = url
-        # # logging.debug('tenantid self.tenant %s' %self.tenant)
-        # self.request = request
-        # logging.debug('self.request %s' %self.request)
-        # self.headers = headers
-        # logging.debug('headers %s' %headers)
-        logging.debug('model_url %s' %model_url)
-        self.model_url = model_url
         self.body = body
         logging.debug('body %s' %body)
         self.column_map = column_map
         logging.debug('column_map %s' %column_map)
+        self.wml_endpoint = wml_endpoint
+        self.uid = uid
+        self.password = password
+        self.instance_id = instance_id
+        self.apikey = apikey
 
 
 
+    '''
     def invoke_model(self, df):
         logging.debug('invoking model')
         model_url = self.model_url
@@ -92,34 +85,39 @@ class InvokeExternalModel(BasePreload):
             logging.debug(r.status_code)
             logging.debug(r.text)
             return []
+    '''
 
-    def invoke_model_wml(self, df):
-        logging.debug('invoking model')
-        model_url = self.model_url
-        body = df #.to_dict()
-        logging.debug('posting dataframe %s' %str(body))
-        logging.debug('target %s' %model_url)
-        # print("posting following dataframe")
-        # print(body)
-        # here we need to filter down to the specific fields the user wants.
-        r = requests.post(model_url, json=body)
-        if r.status_code == 200:
-            logging.debug("predictions received")
-            predictions = r.json()
-            logging.debug("predictions")
-            logging.debug(predictions)
-            return predictions
-        else:
-            logging.debug("failure receiving predictions")
-            logging.debug(r.status_code)
-            logging.debug(r.text)
+    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, apikey):
+        # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
+        # Get an IAM token from IBM Cloud
+        print("posting enitity data to WML model")
+        url     = "https://iam.bluemix.net/oidc/token"
+        headers = { "Content-Type" : "application/x-www-form-urlencoded" }
+        data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
+        response  = requests.post( url, headers=headers, data=data, auth=( uid, password ) )
+        if 200 != response.status_code:
+            print( response.status_code )
+            print( response.reason )
             return []
+        else:
+            logging.debug('token successfully generated')
+            iam_token = response.json()["access_token"]
+            # Send data to deployed model for processing
+            headers = { "Content-Type" : "application/json",
+                        "Authorization" : "Bearer " + iam_token,
+                        "ML-Instance-ID" : instance_id }
+            logging.debug("posting to WML")
+            payload = df.to_dict()
+            response = requests.post( wml_endpoint, json=payload, headers=headers )
+            return response
+            # print ( response.text )
 
     def execute(self, df, start_ts = None,end_ts=None,entities=None):
         # TODO, set time range if not provided. Grab all rows within x hours
         logging.debug('in execution method')
         entity_type = self.get_entity_type()
         logging.debug('entity_type')
+        logging.debug(entity_type)
         self.db = entity_type.db
         logging.debug('entity db')
         # encoded_body = json.dumps(self.body).encode('utf-8')
@@ -138,24 +136,21 @@ class InvokeExternalModel(BasePreload):
         schema = entity_type._db_schema
         logging.debug('schema')
 
-        # logging.debug('looking for anamoly in %s ' %m)
-        # df = pd.DataFrame({"speed": [30, 40, 50], "work_completed": [10,2,7]})
 
-
-        # rows = len(buildings)
-        # logging.debug('rows %s ' %rows)
         response_data = {}
         (metrics,dates,categoricals,others) = self.db.get_column_lists_by_type(
             table = table,
             schema= schema,
             exclude_cols = []
         )
+        # TODO, can't we also get calculated metrics?
+        logging.debug('all metrics %s ' %metrics)
+
+        # TODO, grabbing all table data for now, add logic to break up by entity id and use start/end_ts values.
         table_data = self.db.read_table(table_name=table, schema=schema)
         logging.debug('table_data')
         logging.debug(table_data)
         # rows = len(buildings)
-        logging.debug('pulled columns')
-        logging.debug('all metrics %s ' %metrics)
 
         # for m in metrics:
         #     logging.debug('metrics %s ' %m)
@@ -168,13 +163,6 @@ class InvokeExternalModel(BasePreload):
         #     logging.debug('dates data %s ' %response_data[d])
 
         '''
-        # Create Numpy array
-        '''
-        # response_data['speed'] = np.array([30, 40, 50])
-        # response_data['speed_KB_Robot_Type_max'] = np.array([])
-        # response_data['predictions'] = np.array(predictions) # TODO, need to add scores as well, likelihood of anamoly
-        ## TODO, not sure what the following values should be?
-        '''
         # Create a timeseries dataframe with data received from Maximo
         '''
         logging.debug('response_data used to create dataframe ===' )
@@ -182,9 +170,11 @@ class InvokeExternalModel(BasePreload):
         # df = pd.DataFrame(data=response_data)
         df = table_data
 
-        predictions = self.invoke_model(df)
-        logging.debug('predictions %s' %predictions )
-
+        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.apikey)
+        if results:
+            logging.debug('results %s' %results )
+        else:
+            logging.error('error invoking external model')
 
         logging.debug('Generated DF from response_data ===' )
         logging.debug( df.head() )
@@ -225,7 +215,15 @@ class InvokeExternalModel(BasePreload):
         '''
         # Write the dataframe to the IBM IOT Platform database table
         '''
-        self.write_frame(df=df, table_name=table)
+        # TODO, need to adjust this logic, possibly to add a column specifying whether row is an anomaly or not?
+        # Or write to seperate table
+
+        # self.write_frame(df=df, table_name=table)
+
+        # anomaly_table = "anomalies"
+        # self.db.create(anomaly_table)
+        # self.write_frame(df=df, table_name=anomaly_table)
+
         kwargs ={
             'table_name' : table,
             'schema' : schema,
@@ -250,24 +248,36 @@ class InvokeExternalModel(BasePreload):
         '''
         # define arguments that behave as function inputs
         inputs = []
-        # inputs.append(ui.UISingle(name='username',
-        #                       datatype=str,
-        #                       description='Username for Maximo Instance',
-        #                       tags=['TEXT'],
-        #                       required=True
-        #                       ))
-        # inputs.append(ui.UISingle(name='password',
-        #                       datatype=str,
-        #                       description='Password for Maximo Instance',
-        #                       tags=['TEXT'],
-        #                       required=True
-        #                       ))
-        inputs.append(ui.UISingle(    name='model_url',
-                                      datatype=str,
-                                      description='url of external hosted model',
-                                      tags=['TEXT'],
-                                      required=True
-                                  ))
+        inputs.append(ui.UISingle(name='wml_endpoint',
+                              datatype=str,
+                              description='Endpoint to WML service where model is hosted',
+                              tags=['TEXT'],
+                              required=True
+                              ))
+        inputs.append(ui.UISingle(name='uid',
+                              datatype=str,
+                              description='IBM Cloud IAM User ID',
+                              tags=['TEXT'],
+                              required=True
+                              ))
+        inputs.append(ui.UISingle(name='password',
+                              datatype=str,
+                              description='IBM Cloud IAM Password',
+                              tags=['TEXT'],
+                              required=True
+                              ))
+        inputs.append(ui.UISingle(name='instance_id',
+                              datatype=str,
+                              description='Instance ID for WML model',
+                              tags=['TEXT'],
+                              required=True
+                              ))
+        inputs.append(ui.UISingle(name='apikey',
+                              datatype=str,
+                              description='IBM Cloud API Key',
+                              tags=['TEXT'],
+                              required=True
+                              ))
         # define arguments that behave as function outputs
         outputs=[]
         outputs.append(ui.UIStatusFlag(name='output_item'))
