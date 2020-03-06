@@ -68,122 +68,35 @@ class InvokeExternalModel(BasePreload):
         self.column_map = column_map
         logging.debug('column_map %s' %column_map)
 
-        # TODO, add this section after adding basic auth to section
-        # if headers:
-        #     self.headers['auth'] = self.token
-        # else:
-        #     self.headers = {
-        #         "auth": self.token
-        #     }
-
-
-        # return metrics_value, metrics_unit, metrics_compare_percent, metrics_trend, metrics_trend_status
-
-
-        # '''
-        # [
-        # "buildingName":
-        #     {
-        #         "temp": "75",
-        #         "energy": "15kw"
-        #     }
-        # ]
-        # '''
-        #
-        # '''
-        # # input list of buildings and Returns list of energy by building.
-        #
-        # # wastage: Provides energy wastage of this building for last 30 days. Provides % Wastage compared to total energy usage of that building. Wastage is calculated as the sum of excess energy consumed over the upper bound of the predicted energy, in the last 30 days.
-        # {
-        #   "value": 0,
-        #   "unit": "string",
-        #   "usage_percent": 0
-        # }
-        #
-        # # usage: Provides energy consumption of this building for last 30 days. Provide % Up or Down compared to same 30 days of the last year
-        # {
-        #   "value": 0,
-        #   "unit": "string",
-        #   "compare_percent": 0,
-        #   "trend": "string",
-        #   "trend_status": "string"
-        # }
-        #
-        # # prediction:  Returns the energy usage for last 48 hours, energy prediction for next 48 hours and the trend whether its up or down
-        # {
-        #   "value": 0,
-        #   "unit": "string",
-        #   "trend": "string",
-        #   "trend_status": "string",
-        #   "last_value": 0,
-        #   "last_unit": "string"
-        # }
-        # '''
-        #
-        # '''
-        # # Initialize building energy metrics to retrieve
-        # '''
-        # metrics_value = []
-        # metrics_unit  = []
-        # metrics_compare_percent  = []
-        # metrics_trend = []
-        # metrics_trend_status = []
-        #
-        # logging.debug("Getting Energy")
-        # header = {}
-        # # auth_str = 'Bearer '+ self.token
-        # #header = { 'Authorization':  }
-        # header['maxauth'] = self.token
-        # body = {}
-        # energy_data_options = ['usage']
-        #
-        #
-        # for bldg in buildings:
-        #     logging.debug("getMeters for buiding %s "  %bldg)
-        #
-        #     for etype in energy_data_options:
-        #         logging.debug("getMeters type %s " %etype  )
-        #         uri = "https://" + self.tenant + "-agg.mybluemix.net/api/v1/building/energy/" + etype
-        #         logging.debug("uri %s" %uri)
-        #         req = self.db.http.request('GET',
-        #                          uri,
-        #                          fields={'buildingName': bldg
-        #                                  },
-        #                          body=body,
-        #                          headers= header)
-        #         if req.status == 200:
-        #             logging.debug("energy_metrics req.data  %s" %req.data )
-        #             # '{"value":16.3,"unit":"MWh","compare_percent":7.34,"trend":"DOWN","trend_status":"GREEN"}'
-        #             energy_metrics_json = json.loads(req.data.decode('utf-8'))
-        #             metrics_value.append(energy_metrics_json['value'])
-        #             metrics_unit.append(energy_metrics_json['unit'])
-        #             metrics_compare_percent.append(energy_metrics_json['compare_percent'])
-        #             metrics_trend.append(energy_metrics_json['trend'])
-        #             metrics_trend_status.append(energy_metrics_json['trend_status'])
-        #         else:
-        #             logging.debug('energy_metrics no data found' )
-        #             metrics_value.append(0.0)
-        #             metrics_unit.append("NA")
-        #             metrics_compare_percent.append(0.0)
-        #             metrics_trend.append("NA")
-        #             metrics_trend_status.append("NA")
-        #
-        # return metrics_value, metrics_unit, metrics_compare_percent, metrics_trend, metrics_trend_status
-
-    # def parseBuildings (self, data = None ):
-    #     buildings = []
-    #     for bldg in data:
-    #         logging.debug("parseBuildings  bld %s " %bldg)
-    #         if '_' not in bldg['src'] :
-    #             #building['id'] = bldg['src']
-    #             buildings.append(bldg['src'])
-    #     return buildings
 
 
     def invoke_model(self, df):
         logging.debug('invoking model')
         model_url = self.model_url
-        body = df.to_dict()
+        body = df #.to_dict()
+        logging.debug('posting dataframe %s' %str(body))
+        logging.debug('target %s' %model_url)
+        # print("posting following dataframe")
+        # print(body)
+        # here we need to filter down to the specific fields the user wants.
+        return []
+        r = requests.post(model_url, json=body)
+        if r.status_code == 200:
+            logging.debug("predictions received")
+            predictions = r.json()
+            logging.debug("predictions")
+            logging.debug(predictions)
+            return predictions
+        else:
+            logging.debug("failure receiving predictions")
+            logging.debug(r.status_code)
+            logging.debug(r.text)
+            return []
+
+    def invoke_model_wml(self, df):
+        logging.debug('invoking model')
+        model_url = self.model_url
+        body = df #.to_dict()
         logging.debug('posting dataframe %s' %str(body))
         logging.debug('target %s' %model_url)
         # print("posting following dataframe")
@@ -203,6 +116,7 @@ class InvokeExternalModel(BasePreload):
             return []
 
     def execute(self, df, start_ts = None,end_ts=None,entities=None):
+        # TODO, set time range if not provided. Grab all rows within x hours
         logging.debug('in execution method')
         entity_type = self.get_entity_type()
         logging.debug('entity_type')
@@ -225,13 +139,8 @@ class InvokeExternalModel(BasePreload):
         logging.debug('schema')
 
         # logging.debug('looking for anamoly in %s ' %m)
-        df = pd.DataFrame({"speed": [30, 40, 50], "work_completed": [10,2,7]})
-        logging.debug("printing df")
-        logging.debug(df)
-        logging.debug(f'df shape {df.shape}')
+        # df = pd.DataFrame({"speed": [30, 40, 50], "work_completed": [10,2,7]})
 
-        predictions = self.invoke_model(df)
-        logging.debug('predictions %s' %predictions )
 
         # rows = len(buildings)
         # logging.debug('rows %s ' %rows)
@@ -241,22 +150,27 @@ class InvokeExternalModel(BasePreload):
             schema= schema,
             exclude_cols = []
         )
-        # TODO, overriding metrics for now
-        metrics = ['speed']
-        for m in metrics:
-            logging.debug('metrics %s ' %m)
-            response_data[m] = np.random.normal(0,1,rows)
-            logging.debug('metrics data %s ' %response_data[m])
+        table_data = self.db.read_table(table_name=table, schema=schema)
+        logging.debug('table_data')
+        logging.debug(table_data)
+        # rows = len(buildings)
+        logging.debug('pulled columns')
+        logging.debug('all metrics %s ' %metrics)
 
-        for d in dates:
-            logging.debug('dates %s ' %d)
-            response_data[d] = dt.datetime.utcnow() - dt.timedelta(seconds=15)
-            logging.debug('dates data %s ' %response_data[d])
+        # for m in metrics:
+        #     logging.debug('metrics %s ' %m)
+        #     # response_data[m] = np.random.normal(0,1,rows)
+        #     logging.debug('metrics data %s ' %response_data[m])
+        #
+        # for d in dates:
+        #     logging.debug('dates %s ' %d)
+        #     response_data[d] = dt.datetime.utcnow() - dt.timedelta(seconds=15)
+        #     logging.debug('dates data %s ' %response_data[d])
 
         '''
         # Create Numpy array
         '''
-        response_data['speed'] = np.array([30, 40, 50])
+        # response_data['speed'] = np.array([30, 40, 50])
         # response_data['speed_KB_Robot_Type_max'] = np.array([])
         # response_data['predictions'] = np.array(predictions) # TODO, need to add scores as well, likelihood of anamoly
         ## TODO, not sure what the following values should be?
@@ -265,7 +179,13 @@ class InvokeExternalModel(BasePreload):
         '''
         logging.debug('response_data used to create dataframe ===' )
         logging.debug( response_data)
-        df = pd.DataFrame(data=response_data)
+        # df = pd.DataFrame(data=response_data)
+        df = table_data
+
+        predictions = self.invoke_model(df)
+        logging.debug('predictions %s' %predictions )
+
+
         logging.debug('Generated DF from response_data ===' )
         logging.debug( df.head() )
         df = df.rename(self.column_map, axis='columns')
@@ -311,10 +231,12 @@ class InvokeExternalModel(BasePreload):
             'schema' : schema,
             'row_count' : len(df.index)
         }
+        logging.debug( "write_frame complete" )
         entity_type.trace_append(created_by=self,
                                  msg='Wrote data to table',
                                  log_method=logger.debug,
                                  **kwargs)
+        logging.debug( "appended trace" )
         return True
 
     '''
