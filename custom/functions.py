@@ -90,7 +90,7 @@ class InvokeExternalModel(BasePreload):
     def invoke_model(self, df, wml_endpoint, uid, password, instance_id, apikey):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
-        print("posting enitity data to WML model")
+        logging.debug("posting enitity data to WML model")
         url     = "https://iam.bluemix.net/oidc/token"
         headers = { "Content-Type" : "application/x-www-form-urlencoded" }
         data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
@@ -110,12 +110,16 @@ class InvokeExternalModel(BasePreload):
             logging.debug("posting to WML")
             payload = df.to_dict()
             r = requests.post( wml_endpoint, json=payload, headers=headers )
+            logging.debug('model response code: ' + str(r.status_code) )
             if r.status_code == 200:
-                j = r.json()
                 logging.debug('model response')
+                logging.debug(r.text)
+                j = r.json()
+                logging.debug('json')
                 logging.debug(j)
                 return j
             else:
+                logging.error('error invoking model')
                 logging.error(r.status_code)
                 logging.error(r.text)
             # print ( response.text )
@@ -176,7 +180,7 @@ class InvokeExternalModel(BasePreload):
         logging.debug('response_data used to create dataframe ===' )
         logging.debug( response_data)
         # df = pd.DataFrame(data=response_data)
-        df = table_data
+        df = pd.DataFrame(data=table_data)
 
         results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.apikey)
         if results:
