@@ -96,8 +96,9 @@ class InvokeExternalModel(BasePreload):
         data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
         response  = requests.post( url, headers=headers, data=data, auth=( uid, password ) )
         if 200 != response.status_code:
-            print( response.status_code )
-            print( response.reason )
+            logging.error('error getting IAM token')
+            logging.error( response.status_code )
+            logging.error( response.reason )
             return []
         else:
             logging.debug('token successfully generated')
@@ -108,8 +109,15 @@ class InvokeExternalModel(BasePreload):
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
             payload = df.to_dict()
-            response = requests.post( wml_endpoint, json=payload, headers=headers )
-            return response
+            r = requests.post( wml_endpoint, json=payload, headers=headers )
+            if r.status_code == 200:
+                j = r.json()
+                logging.debug('model response')
+                logging.debug(j)
+                return j
+            else:
+                logging.error(r.status_code)
+                logging.error(r.text)
             # print ( response.text )
 
     def execute(self, df, start_ts = None,end_ts=None,entities=None):
