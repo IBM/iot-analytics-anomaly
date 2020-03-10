@@ -35,7 +35,7 @@ class InvokeExternalModel(BasePreload):
 
     out_table_name = None
 
-    def __init__(self, wml_endpoint, uid, password, instance_id, apikey, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, uid, password, instance_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
         if body is None:
             body = {}
@@ -58,11 +58,14 @@ class InvokeExternalModel(BasePreload):
         self.uid = uid
         self.password = password
         self.instance_id = instance_id
+        self.deployment_id = deployment_id
         self.apikey = apikey
+        self.input_features = apikey
 
 
 
     '''
+    # for invoking custom model if user wants to host outside of IBM Cloud
     def invoke_model(self, df):
         logging.debug('invoking model')
         model_url = self.model_url
@@ -87,7 +90,20 @@ class InvokeExternalModel(BasePreload):
             return []
     '''
 
-    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, apikey):
+    def get_iam_token(self, uid, password):
+        url     = "https://iam.bluemix.net/oidc/token"
+        headers = { "Content-Type" : "application/x-www-form-urlencoded" }
+        data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
+        r = requests.post( url, headers=headers, data=data, auth=( uid, password ) )
+        if r.status_code == 200:
+            iam_token = r.json()["access_token"]
+            print("token received")
+            return iam_token
+        else:
+            print("error retrieving token")
+            return None
+
+    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
         logging.debug("posting enitity data to WML model")
@@ -108,8 +124,14 @@ class InvokeExternalModel(BasePreload):
                         "Authorization" : "Bearer " + iam_token,
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
-            payload = df.to_dict()
-            r = requests.post( wml_endpoint, json=payload, headers=headers )
+            columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
+            s_df = df[columns]
+            rows = [list(r) for i,r in s_df.iterrows()]
+            payload = {"values": rows}
+            # payload = {"values": df.to_dict()}
+            wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
+            # wml_model_endpoint = f'{wml_endpoint}/w3/wml_instances/{instance_id}/deployments/{deployment_id}'
+            r = requests.post( wml_model_endpoint, json=payload, headers=headers )
             logging.debug('model response code: ' + str(r.status_code) )
             if r.status_code == 200:
                 logging.debug('model response')
@@ -122,6 +144,7 @@ class InvokeExternalModel(BasePreload):
                 logging.error('error invoking model')
                 logging.error(r.status_code)
                 logging.error(r.text)
+                return None
             # print ( response.text )
 
     def execute(self, df, start_ts = None,end_ts=None,entities=None):
@@ -156,7 +179,7 @@ class InvokeExternalModel(BasePreload):
             exclude_cols = []
         )
         # TODO, can't we also get calculated metrics?
-        logging.debug('all metrics %s ' %metrics)
+        # logging.debug('all metrics %s ' %metrics)
 
         # TODO, grabbing all table data for now, add logic to break up by entity id and use start/end_ts values.
         table_data = self.db.read_table(table_name=table, schema=schema)
@@ -179,14 +202,17 @@ class InvokeExternalModel(BasePreload):
         '''
         logging.debug('response_data used to create dataframe ===' )
         logging.debug( response_data)
-        # df = pd.DataFrame(data=response_data)
-        df = pd.DataFrame(data=table_data)
-
-        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.apikey)
+        # df = pd.DataFrame(data=table_data)
+        df = pd.DataFrame(data=table_data.head())
+        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
+            # TODO append results to entity table as additional column
+            df["anomaly_score"] = results
         else:
             logging.error('error invoking external model')
+        logging.debug("exiting after model invoked")
+        return True
 
         logging.debug('Generated DF from response_data ===' )
         logging.debug( df.head() )
@@ -198,6 +224,7 @@ class InvokeExternalModel(BasePreload):
         # Fill in missing columns with nulls
         '''
         required_cols = self.db.get_column_names(table = table, schema=schema)
+        required_cols.append('anomaly_score') # TODO, hacky way to add column
         logging.debug('required_cols %s' %required_cols )
         missing_cols = list(set(required_cols) - set(df.columns))
         logging.debug('missing_cols %s' %missing_cols )
@@ -287,6 +314,12 @@ class InvokeExternalModel(BasePreload):
         inputs.append(ui.UISingle(name='apikey',
                               datatype=str,
                               description='IBM Cloud API Key',
+                              tags=['TEXT'],
+                              required=True
+                              ))
+        inputs.append(ui.UISingle(name='input_features',
+                              datatype=str,
+                              description='Features to load from entity rows',
                               tags=['TEXT'],
                               required=True
                               ))

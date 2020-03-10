@@ -69,20 +69,15 @@ except Exception as ex:
 # =======================================
 try:
     #  Credentials
-    print("Environment Variables Building Insights Loading")
-    # USERNAME = os.environ.get("USERNAME")
-    # print(USERNAME)
-    # PASSWORD = os.environ.get("PASSWORD")
-    # print(PASSWORD)
-    # TENANT_ID = os.environ.get("TENANT_ID")
-    # print(TENANT_ID)
-    # TABLE_NAME = os.environ.get("TABLE_NAME")
-    # print(TABLE_NAME)
-    # DB_SCHEMA = os.environ.get("DB_SCHEMA")
-    # print(DB_SCHEMA)
-    # ENTITY_NAME = os.environ.get("ENTITY_NAME")
-    # print(ENTITY_NAME)
-    MODEL_URL = os.environ.get("MODEL_URL")
+    print("Loading WML Environment Variables")
+    # MODEL_URL = os.environ.get("MODEL_URL")
+    IAM_UID= os.environ.get("IAM_UID")
+    IAM_PASSWORD= os.environ.get("IAM_PASSWORD")
+    WATSON_ML_ENDPOINT= os.environ.get("WATSON_ML_ENDPOINT")
+    WATSON_ML_INSTANCE_ID= os.environ.get("WATSON_ML_INSTANCE_ID")
+    WATSON_ML_DEPLOYMENT_ID = os.environ.get("WATSON_ML_DEPLOYMENT_ID")
+    WATSON_ML_APIKEY= os.environ.get("WATSON_ML_APIKEY")
+
     print("Environment Variables Loaded Successfully")
 
 except Exception as ex:

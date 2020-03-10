@@ -6,3 +6,5 @@ env
 credentials.json
 *json
 run.log
+srom*
+scripts/notes.py
