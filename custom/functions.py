@@ -11,6 +11,7 @@ import requests
 
 #from iotfunctions.base import BaseTransformer
 from iotfunctions.base import BasePreload
+from iotfunctions.base import BaseTransformer
 from iotfunctions import ui
 from iotfunctions.db import Database
 from iotfunctions import bif
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 PACKAGE_URL = 'git+https://github.com/kkbankol-ibm/monitor-anomaly@'
 
 class InvokeExternalModel(BasePreload):
+# class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
     Response returns index of rows that are classified as an anomaly, as well as the confidence score
@@ -91,6 +93,7 @@ class InvokeExternalModel(BasePreload):
     '''
 
     def get_iam_token(self, uid, password):
+        logging.debug("getting IAM token")
         url     = "https://iam.bluemix.net/oidc/token"
         headers = { "Content-Type" : "application/x-www-form-urlencoded" }
         data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
@@ -125,6 +128,8 @@ class InvokeExternalModel(BasePreload):
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
             columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
+            print("wml df.columns")
+            print(df.columns)
             s_df = df[columns]
             rows = [list(r) for i,r in s_df.iterrows()]
             payload = {"values": rows}
@@ -167,7 +172,8 @@ class InvokeExternalModel(BasePreload):
             table = entity_type.name
         else:
             table = self.out_table_name
-        logging.debug('set table')
+        logging.debug('table')
+        logging.debug(table)
         schema = entity_type._db_schema
         logging.debug('schema')
 
@@ -182,9 +188,6 @@ class InvokeExternalModel(BasePreload):
         # logging.debug('all metrics %s ' %metrics)
 
         # TODO, grabbing all table data for now, add logic to break up by entity id and use start/end_ts values.
-        table_data = self.db.read_table(table_name=table, schema=schema)
-        logging.debug('table_data')
-        logging.debug(table_data)
         # rows = len(buildings)
 
         # for m in metrics:
@@ -202,17 +205,33 @@ class InvokeExternalModel(BasePreload):
         '''
         logging.debug('response_data used to create dataframe ===' )
         logging.debug( response_data)
-        # df = pd.DataFrame(data=table_data)
-        df = pd.DataFrame(data=table_data.head())
-        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
+        logging.debug( "dataframe")
+        logging.debug( df)
+        logging.debug( df.columns)
+        if len(df) > 0:
+            df = pd.DataFrame(data=df)
+        else:
+            # test case, pull all simulated data
+            table_data = self.db.read_table(table_name=table, schema=schema)
+            df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
+            logging.debug("loaded df")
+            logging.debug(df.columns)
+
+        # add "anomaly_score" column TODO, allow user to customize and provide columns
+        # if "anomaly_score" not in df.columns:
+        #     df["anomaly_score"] = np.zeros(len(table_data))
+
+        results = self.invoke_model(df.loc[0:99], self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
-            df["anomaly_score"] = results
+            # df.head()["anomaly_score"] =
+            # df.loc[0:4,col_indexer]
+            df.loc[0:99, 'anomaly_score'] = results['values']
         else:
             logging.error('error invoking external model')
-        logging.debug("exiting after model invoked")
-        return True
+        # logging.debug("exiting after model invoked")
+        # return True
 
         logging.debug('Generated DF from response_data ===' )
         logging.debug( df.head() )
@@ -224,7 +243,8 @@ class InvokeExternalModel(BasePreload):
         # Fill in missing columns with nulls
         '''
         required_cols = self.db.get_column_names(table = table, schema=schema)
-        required_cols.append('anomaly_score') # TODO, hacky way to add column
+        # if "anomaly_score" not in required_cols:
+        #     required_cols.append('anomaly_score') # TODO, hacky way to add column
         logging.debug('required_cols %s' %required_cols )
         missing_cols = list(set(required_cols) - set(df.columns))
         logging.debug('missing_cols %s' %missing_cols )
@@ -249,15 +269,17 @@ class InvokeExternalModel(BasePreload):
         '''
         df = df[required_cols]
         logging.debug('DF stripped to only required columns ===' )
-        logging.debug( df.head() )
+        logging.debug( df )
 
         '''
         # Write the dataframe to the IBM IOT Platform database table
         '''
         # TODO, need to adjust this logic, possibly to add a column specifying whether row is an anomaly or not?
         # Or write to seperate table
-
-        # self.write_frame(df=df, table_name=table)
+        logging.debug('df.columns')
+        logging.debug(df.columns)
+        if_exists_action = "replace" # replace # TODO, change to append
+        self.write_frame(df=df, table_name=table.lower(), if_exists=if_exists_action)
 
         # anomaly_table = "anomalies"
         # self.db.create(anomaly_table)
