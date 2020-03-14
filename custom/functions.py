@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/kkbankol-ibm/monitor-anomaly@'
 
-class InvokeExternalModel(BasePreload):
+class InvokeModel(BasePreload):
 # class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
