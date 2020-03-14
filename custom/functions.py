@@ -36,7 +36,7 @@ class InvokeExternalModel(BasePreload):
 
     out_table_name = None
 
-    def __init__(self, wml_endpoint, uid, password, model_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, model_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
         if body is None:
             body = {}
@@ -56,8 +56,11 @@ class InvokeExternalModel(BasePreload):
         self.column_map = column_map
         logging.debug('column_map %s' %column_map)
         self.wml_endpoint = wml_endpoint
-        self.uid = uid
-        self.password = password
+        # self.uid = uid
+        # self.password = password
+        # https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/ml-authentication.html
+        self.uid = "bx"
+        self.password = "bx"
         self.model_id = model_id
         self.deployment_id = deployment_id
         self.apikey = apikey
@@ -308,27 +311,33 @@ class InvokeExternalModel(BasePreload):
         '''
         # define arguments that behave as function inputs
         inputs = []
+        # inputs.append(ui.UISingle(name='uid',
+        #                       datatype=str,
+        #                       description='IBM Cloud IAM User ID',
+        #                       tags=['TEXT'],
+        #                       required=True
+        #                       ))
+        # inputs.append(ui.UISingle(name='password',
+        #                       datatype=str,
+        #                       description='IBM Cloud IAM Password',
+        #                       tags=['TEXT'],
+        #                       required=True
+        #                       ))
         inputs.append(ui.UISingle(name='wml_endpoint',
                               datatype=str,
                               description='Endpoint to WML service where model is hosted',
                               tags=['TEXT'],
                               required=True
                               ))
-        inputs.append(ui.UISingle(name='uid',
-                              datatype=str,
-                              description='IBM Cloud IAM User ID',
-                              tags=['TEXT'],
-                              required=True
-                              ))
-        inputs.append(ui.UISingle(name='password',
-                              datatype=str,
-                              description='IBM Cloud IAM Password',
-                              tags=['TEXT'],
-                              required=True
-                              ))
         inputs.append(ui.UISingle(name='model_id',
                               datatype=str,
                               description='Instance ID for WML model',
+                              tags=['TEXT'],
+                              required=True
+                              ))
+        inputs.append(ui.UISingle(name='deployment_id',
+                              datatype=str,
+                              description='Deployment ID for WML model',
                               tags=['TEXT'],
                               required=True
                               ))

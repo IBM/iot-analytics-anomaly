@@ -268,23 +268,26 @@ git add ./custom/functions.py
 git commit -m "my function changes"
 git push origin master
 ``` -->
-Next, we'll add our custom function to our newly created entity. This will enable the function to run every 5 minutes and analyze new data for anomalies. Navigate to the "Add Data view", and select the InvokeExternalModel function. We can get to this form by the following
+Next, we'll add our custom function to our newly created entity via. This will enable the function to run every 5 minutes and analyze new data for anomalies. To enable the function, navigate to the "Add Data view". We can get to this form in the Analytics dashboard by selecting the following
 
-Explore > Entity Types > Buildings > Add Data
+Monitor > Entity Types > (entity name) > Data
 <!-- ![Select function](./images/create_new_data.png) -->
 
+Click the `+` button and search for "InvokeExternalModel"
 <p align="center">
-<img src="https://i.imgur.com/vtZz6hD.png"/>
+<img src="https://i.imgur.com/ic4Ms9k.png"/>
 </p>
 
 
 Set values/credentials for your Maximo instance.
-```
-URL = <maximo_url>
-usernam	= <username>
-password = <password>
-request = GET (select from drop down)
-```
+- URL - WML Endpoint
+- apikey - "WML API key"
+- model_id - "WML Model ID (should be printed after running invoke_model_function.py)"
+- deployment_id - "WML Deployment ID (should be printed after running invoke_model_function.py)"
+- input_features - "comma separated list of features that should be loaded from entity dataframe"
+
+<!-- - username	- "IBM Cloud username"
+- password - "IBM Cloud password" -->
 
 <p align="center">
 <img src="https://i.imgur.com/PI8zY39.png"/>
