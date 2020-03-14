@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 # Specify the URL to your package here.
 # This URL must be accessible via pip install
-#PACKAGE_URL = 'git+https://github.com/madendorff/functions@'
 PACKAGE_URL = 'git+https://github.com/kkbankol-ibm/monitor-anomaly@'
 
 class InvokeExternalModel(BasePreload):
@@ -37,7 +36,7 @@ class InvokeExternalModel(BasePreload):
 
     out_table_name = None
 
-    def __init__(self, wml_endpoint, uid, password, instance_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, uid, password, model_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
         if body is None:
             body = {}
@@ -59,7 +58,7 @@ class InvokeExternalModel(BasePreload):
         self.wml_endpoint = wml_endpoint
         self.uid = uid
         self.password = password
-        self.instance_id = instance_id
+        self.model_id = model_id
         self.deployment_id = deployment_id
         self.apikey = apikey
         self.input_features = apikey
@@ -103,10 +102,10 @@ class InvokeExternalModel(BasePreload):
             print("token received")
             return iam_token
         else:
-            print("error retrieving token")
+            print("error retrieving IAM token")
             return None
 
-    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey):
+    def invoke_model(self, df, wml_endpoint, uid, password, model_id, deployment_id, apikey):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
         logging.debug("posting enitity data to WML model")
@@ -125,7 +124,7 @@ class InvokeExternalModel(BasePreload):
             # Send data to deployed model for processing
             headers = { "Content-Type" : "application/json",
                         "Authorization" : "Bearer " + iam_token,
-                        "ML-Instance-ID" : instance_id }
+                        "ML-Instance-ID" : model_id }
             logging.debug("posting to WML")
             columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
             print("wml df.columns")
@@ -134,8 +133,8 @@ class InvokeExternalModel(BasePreload):
             rows = [list(r) for i,r in s_df.iterrows()]
             payload = {"values": rows}
             # payload = {"values": df.to_dict()}
-            wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
-            # wml_model_endpoint = f'{wml_endpoint}/w3/wml_instances/{instance_id}/deployments/{deployment_id}'
+            wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, model_id, deployment_id)
+            # wml_model_endpoint = f'{wml_endpoint}/w3/wml_instances/{model_id}/deployments/{deployment_id}'
             r = requests.post( wml_model_endpoint, json=payload, headers=headers )
             logging.debug('model response code: ' + str(r.status_code) )
             if r.status_code == 200:
@@ -221,7 +220,7 @@ class InvokeExternalModel(BasePreload):
         # if "anomaly_score" not in df.columns:
         #     df["anomaly_score"] = np.zeros(len(table_data))
 
-        results = self.invoke_model(df.loc[0:99], self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
+        results = self.invoke_model(df.loc[0:99], self.wml_endpoint, self.uid, self.password, self.model_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
@@ -327,7 +326,7 @@ class InvokeExternalModel(BasePreload):
                               tags=['TEXT'],
                               required=True
                               ))
-        inputs.append(ui.UISingle(name='instance_id',
+        inputs.append(ui.UISingle(name='model_id',
                               datatype=str,
                               description='Instance ID for WML model',
                               tags=['TEXT'],
