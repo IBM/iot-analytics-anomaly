@@ -207,17 +207,15 @@ class InvokeModel(BasePreload):
         '''
         logging.debug('response_data used to create dataframe ===' )
         logging.debug( response_data)
-        logging.debug( "dataframe")
-        logging.debug( df)
-        logging.debug( df.columns)
         if len(df) > 0:
             df = pd.DataFrame(data=df)
         else:
             # test case, pull all simulated data
             table_data = self.db.read_table(table_name=table, schema=schema)
             df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
-            logging.debug("loaded df")
-            logging.debug(df.columns)
+        logging.debug( "dataframe")
+        logging.debug( df)
+        logging.debug( df.columns)
 
         # add "anomaly_score" column TODO, allow user to customize and provide columns
         # if "anomaly_score" not in df.columns:

@@ -2,7 +2,7 @@ import json
 import logging
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, func
 from iotfunctions import bif
-from custom.functions import InvokeExternalModel
+from custom.functions import InvokeModel
 from iotfunctions.metadata import EntityType
 from iotfunctions.db import Database
 from iotfunctions.base import BaseTransformer
@@ -54,7 +54,10 @@ entity = EntityType(entity_name, db,
                       '_db_schema' : db_schema}
 )
 
-db.register_functions([InvokeExternalModel])
+# db.unregister_functions(["InvokeExternalModel"])
+# exit()
+db.register_functions([InvokeModel])
+# exit()
 print("Function registered")
 
 entity.register(raise_error=False)

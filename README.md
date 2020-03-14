@@ -56,10 +56,9 @@ The intended audience for this Code Pattern are developers / data scientists who
 Follow these steps to setup and run this Code Pattern.
 1. [Provision cloud services](#1-provision-cloud-services)
 2. [Setup your Python development environment](#2-setup-your-python-development-environment)
-3. [Create an entity type](#3-create-an-entity-type)
+3. [Leverage Python scripts to register entity, function, and ML model](#3-Leverage-python-scripts-to-register-entity-model-and-function)
 4. [Deploy Function](#4-deploy-function)
 5. [Deploy Custom Model](#5-deploy-function)
-6. [View Dashboard](#6-view-dashboard)
 <!-- 5. [Create a Dashboard](#4-create-dashboard) -->
 
 
@@ -209,7 +208,7 @@ export PYTHONPATH="<root_project_directory>"
 python ./scripts/local_test_of_function.py
 ``` -->
 
-## 3. Create an entity type
+## 3. Use scripts to register entity, function, and ML model
 
 Copy your Watson IOT Platform Service credentials into a `credentials.json` file
 
@@ -238,7 +237,7 @@ export PYTHONPATH=$(pwd)
 ```
 
 
-Invoke the `register_entity.py` script. This script will create an Entity Type, and populate sample data for each column. This will also add an additional "anomaly_score" column where we can place the model results
+Invoke the `register_entity.py` script. This script will create an Entity Type, and inject sample data for each metric column. This will also create an additional "anomaly_score" column where we can place the model results
 
 ```
 python scripts/register_entity.py
@@ -251,7 +250,10 @@ python scripts/register_model.py
 ```
 
 
-The output of the previous command should include a "deployment_id" and a "model_id". Place these into your .env file as "WATSON_ML_DEPLOYMENT_ID" and "WATSON_ML_MODEL_ID"
+The output of the previous command should include a "deployment_id" and a "model_id". Place these into your .env file as "WATSON_ML_DEPLOYMENT_ID" and "WATSON_ML_MODEL_ID".
+
+After adding the WML credentials, we can test the registed function with the following command
+
 ```
 python scripts/invoke_model_function.py
 ```
@@ -261,25 +263,25 @@ python scripts/invoke_model_function.py
 python ./scripts/local_test_of_function.py
 ``` -->
 
-## 3. Deploy Function
+## 3. Leverage Python scripts to register entity, function, and ML model
 <!-- * Push function code changes to Github.
 ```
 git add ./custom/functions.py
 git commit -m "my function changes"
 git push origin master
 ``` -->
-Next, we'll add our custom function to our newly created entity via the UI. This will enable the function to run every 5 minutes and analyze new data for anomalies. To enable the function, navigate to the "Add Data view". We can get to this form in the Analytics dashboard by selecting the following
+Next, we'll add our custom function to our newly created entity via the UI. This will enable the selected function to run every 5 minutes and analyze new data for anomalies. To enable the function, navigate to the "Add Data view". We can get to this form in the Analytics dashboard by selecting the following
 
 Monitor > Entity Types > (entity name) > Data
 <!-- ![Select function](./images/create_new_data.png) -->
 
 Click the `+` button and search for "InvokeModel"
 <p align="center">
-<img src="https://i.imgur.com/ic4Ms9k.png"/>
+<img src="https://i.imgur.com/Q0EzV37.png"/>
 </p>
 
 
-Enter values/credentials for your Machine Learning instance. You can also specify which features to select.
+Enter the values/credentials for your Machine Learning instance. You can also specify which features to select.
 - URL - WML Endpoint
 - apikey - "WML API key"
 - model_id - "WML Model ID (should be printed after running invoke_model_function.py)"
@@ -290,48 +292,93 @@ Enter values/credentials for your Machine Learning instance. You can also specif
 - password - "IBM Cloud password" -->
 
 <p align="center">
-<img src="https://i.imgur.com/PI8zY39.png"/>
+<img src="https://i.imgur.com/bMzGOyt.png"/>
 </p>
+
+
+Then enter an output variable name and click "Create". The output variable is a boolean value indicating whether the function completed successfully.
+
+<p align="center">
+<img src="https://i.imgur.com/lWDsmKP.png"
+</p>
+
+In summary, the registered function will check for new data from the associated enitity instances every five minutes. The relevant columns (input_features) in the newly added data is then forwarded to the external ML model, and the result is stored in the "anomaly_results" column of the dataframe.
+
+
+## 4. Add alerts
+
+We can also Leverage the "Alerts" feature to receive notifications as anomalies are detected. We'll do so here by clicking the `+` button in the Entity view, and then selecting the "AlertExpression" function
+
+<p align="center">
+<img src="https://i.imgur.com/7Mnuqu7.png"/>
+</p>
+
+Then, enter a condition indicating when the Alert should be triggered. In this case, we should get an alert whenever our anomaly score value is below 0. Enter an output value (using "anomaly_detected" here) and click next.
+
+<p align="center">
+<img src="https://i.imgur.com/UzJQIoC.png"/>
+</p>
+
+We can then see a list of all anomalies by selecting our "anomaly_detected" variable.
+
+<p align="center">
+<img src="https://i.imgur.com/2Zjs4wu.png" />
+</p>
+
 
 <!-- ![credentials](./images/function-tenant.png) -->
 
 
 ## 5. View Dashboard
 
-Finally, we can view our dashboards by clicking the "Monitor" button on the left hand menu, and then selecting your newly created entity (maximoBuildings)
+We can also generate visualizations for each entity instance, which can help identify high level patterns in a dataset. This is done by selecting one of the records in the "instance dashboards" table
+
 
 <p align="center">
-<img src="https://i.imgur.com/TnwSR5k.png"/>
+<img src="https://i.imgur.com/VZQ7TES.png"/>
 </p>
 
-Next, select the default summary dashboard
+Next, click the gear icon in the upper right, and select "Edit Dashboard"
 <p align="center">
-<img src="https://i.imgur.com/NyJla7f.png"/>
+<img src="https://i.imgur.com/zmyCdqY.png"/>
 </p>
 
-This will show an overview of instance data for all registered entities.
+Next, click the gear icon in the upper right, and select "Edit Dashboard"
+<p align="center">
+<img src="https://i.imgur.com/zmyCdqY.png"/>
+</p>
+
+Click "Import"
+<p align="center">
+<img src="https://i.imgur.com/zmyCdqY.png"/>
+</p>
+
+Select the json file in `dashboards/speed_line_dashboard.json`
+
+This will show an overview of instance data for any particular entity.
 
 <p align="center">
-<img src="https://i.imgur.com/d214Wtk.png"/>
+<img src="https://i.imgur.com/6hG59sK.png"/>
 </p>
 
-<!-- * A new Dashboard tab should appear on each entity -->
-<!-- ```
-Explore > Entity Types > Buildings > select an entity which is one of your buildings > Dashboard
-``` -->
-<!-- ![](./images/opendashboard.png) -->
 
-<!-- ![](./images/selectentity.png)
+Metrics can be added to the chart by adding objects to the content and dataSource arrays in the [dashboards/anomalyInstanceDashboard.json](dashboards/anomalyInstanceDashboard.json) file
+```
+{
+    "dataSourceId": "<metric_name>",
+    "label": "<metric_name>"
+}
 
+...
 
-Next, select an instance from that entity
-![](./images/selectinstance.png)
+{
+    "aggregator": "max",
+    "attribute": "<metric_name>",
+    "id": "<metric_name>"
+},
+```
 
-And the resulting view will generate a dashboard with the latest instance data
-![](./images/viewdashboard.png) -->
-
-
-## 6. Update Function (Optional)
+<!-- ## 6. Update Function (Optional)
 
 If you're interested in modifying the type of model,
 
@@ -371,17 +418,7 @@ response_data['building'] = np.array(buildings)
 ..
 meterValues = self.getMeters()
 response_data['temperature'] = np.array(meterValues)
-```
-
-Finally, commit and push these changes to git, and rerun the `local_test_of_function.py` script to register the function changes
-<!-- First, in the `init` function, we'll define parameters needed to authenticate to various apis.  -->
-
-<!-- * Push function code changes to Github. -->
-```
-git add ./custom/functions.py
-git commit -m "my function changes"
-git push origin master
-```
+``` -->
 <!-- * Update function input arguments in your Buildings Entity Type (if applicable)
 ```
 Explore > Entity Types > Buildings > output_item > configure > next > update
