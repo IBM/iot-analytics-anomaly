@@ -209,7 +209,7 @@ export PYTHONPATH="<root_project_directory>"
 python ./scripts/local_test_of_function.py
 ``` -->
 
-## 2. Create an entity type
+## 3. Create an entity type
 
 Copy your Watson IOT Platform Service credentials into a `credentials.json` file
 
@@ -223,7 +223,7 @@ Services > Watson IOT Platform Analytics > View Details > Copy to clipboard
 
 If you've created a custom fork of this repo, modify your .custom/functions.py to set your PACKAGE_URL as the forked Github repository. This is necessary because the Analytics Service will need to install the custom function via pip.
 
-`PACKAGE_URL = 'git+https://github.com/kkbankol-ibm/maximo-anomaly@'`
+`PACKAGE_URL = 'git+https://github.com/ibm/maximo-anomaly@'`
 
 <!-- Change the class name if someone else has already published a function with the same name in your tenant function catalog. In this case, our class name is `InvokeExternalModel`.
 
@@ -238,7 +238,7 @@ export PYTHONPATH=$(pwd)
 ```
 
 
-Invoke scripts/register_entity.py. This script will create an Entity Type, and populate sample data for each column. This will also add an additional "anomaly_score" column where we can place the model results
+Invoke the `register_entity.py` script. This script will create an Entity Type, and populate sample data for each column. This will also add an additional "anomaly_score" column where we can place the model results
 
 ```
 python scripts/register_entity.py
@@ -268,18 +268,18 @@ git add ./custom/functions.py
 git commit -m "my function changes"
 git push origin master
 ``` -->
-Next, we'll add our custom function to our newly created entity via. This will enable the function to run every 5 minutes and analyze new data for anomalies. To enable the function, navigate to the "Add Data view". We can get to this form in the Analytics dashboard by selecting the following
+Next, we'll add our custom function to our newly created entity via the UI. This will enable the function to run every 5 minutes and analyze new data for anomalies. To enable the function, navigate to the "Add Data view". We can get to this form in the Analytics dashboard by selecting the following
 
 Monitor > Entity Types > (entity name) > Data
 <!-- ![Select function](./images/create_new_data.png) -->
 
-Click the `+` button and search for "InvokeExternalModel"
+Click the `+` button and search for "InvokeModel"
 <p align="center">
 <img src="https://i.imgur.com/ic4Ms9k.png"/>
 </p>
 
 
-Set values/credentials for your Maximo instance.
+Enter values/credentials for your Machine Learning instance. You can also specify which features to select.
 - URL - WML Endpoint
 - apikey - "WML API key"
 - model_id - "WML Model ID (should be printed after running invoke_model_function.py)"
@@ -294,61 +294,6 @@ Set values/credentials for your Maximo instance.
 </p>
 
 <!-- ![credentials](./images/function-tenant.png) -->
-
-## 4. Populate data source
-Here, we'll show how to add IoT data to a data source (Maximo). In this example, we'll use a Maximo instance. We'll begin by defining an "Asset Template". This will allow us to quickly generate multiple "Assets", which will represent buildings in this case. Access this form by searching for "Asset Templates" in the "Find Navigation Item" textbox in the upper left corner.
-
-![](./images/assettemplate.png)
-
-Each Asset can have multiple associated "Meters", which are used to track sensor readings over time. We'll add a "Temperature" meter and a "Energy" meter to our template.
-![](./images/definemeters1.png)
-
-<!--  -->
-Now that we have our asset template and associated meters defined, we can create a few building instances. We'll do this by clicking "Generate Building Assets". Provide a quantity and click "Ok".
-
-![](./images/generateassets.png)
-
-<!--  -->
-After the building assets have been created, we can then look them up by clicking on "Assets" in the upper left menu. In the upper left "Find Asset" form, enter the number of one of the newly created assets.
-
-Once the asset page loads, we can add data to the asset, select "Enter Meter Readings" in the lower left-hand menu, under the "More Actions" section. Provide values for the meters. In this example, be sure to add "temperature" values
-
-![](./images/entermeterreadings.png)
-
-Confirm the meter values have be saved by clicking "Manage Meter Reading History"
-
-![](./images/viewmeterreadings.png)
-
-<!-- Now that we have some data populated in Maximo, we'll then samp -->
-
-
-<!-- TODO, explain how to upload   -->
-
-<!-- ## 5. Create Dashboard
-After populating our data source with sensor values, we can view charts corresponding to our sensor data in the dashboard
-
-We can do this by clicking the "Explore" button on the left hand menu, and then selecting your recently created Entity
-
-Then, click the gear in the top right > Manage dashboards
-![](./images/opendashboard.png)
-
-Next, click "Import"
-
-<p align="center">
-<img src="https://i.imgur.com/o4Utvco.png" height="500" width="800" />
-</p>
-
-![](./images/importdashboard.png)
-
-Select the file in the json directory of this project `./json/dashboardBuildingMaximo.json`
-
-Click "Save"
-* Import the dashboard layout file
-```
-Explore > Entity Types > Buildings > click gear top right > manage dashboards > import
-```
-
-Choose file  ./json/Staging-Dashboard.json -->
 
 
 ## 5. View Dashboard
@@ -388,7 +333,7 @@ And the resulting view will generate a dashboard with the latest instance data
 
 ## 6. Update Function (Optional)
 
-If you're interested in pulling data from additional / alternative data sources, you'll need to make a few changes to the `custom/functions.py` file, which drives the IoT Analytics logic.
+If you're interested in modifying the type of model,
 
 In our case, we first added methods to query the Maximo api
 ```
