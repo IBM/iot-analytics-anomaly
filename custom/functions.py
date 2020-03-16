@@ -217,17 +217,14 @@ class InvokeModel(BasePreload):
         logging.debug( df)
         logging.debug( df.columns)
 
-        # add "anomaly_score" column TODO, allow user to customize and provide columns
-        # if "anomaly_score" not in df.columns:
-        #     df["anomaly_score"] = np.zeros(len(table_data))
-
-        results = self.invoke_model(df.loc[0:99], self.wml_endpoint, self.uid, self.password, self.model_id, self.deployment_id, self.apikey)
+        # df = df.loc[0:99] # only for testing, reduce size of dataframe so we don't hit our WML quota as quickly
+        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.model_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
             # df.head()["anomaly_score"] =
             # df.loc[0:4,col_indexer]
-            df.loc[0:99, 'anomaly_score'] = results['values']
+            df.loc[:, 'anomaly_score'] = results['values']
         else:
             logging.error('error invoking external model')
         # logging.debug("exiting after model invoked")
@@ -278,7 +275,7 @@ class InvokeModel(BasePreload):
         # Or write to seperate table
         logging.debug('df.columns')
         logging.debug(df.columns)
-        if_exists_action = "replace" # replace # TODO, change to append
+        if_exists_action = "append" #"replace" # TODO, options are append and replace.
         self.write_frame(df=df, table_name=table.lower(), if_exists=if_exists_action)
 
         # anomaly_table = "anomalies"
