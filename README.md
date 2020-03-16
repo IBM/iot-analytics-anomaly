@@ -344,11 +344,6 @@ Next, click the gear icon in the upper right, and select "Edit Dashboard"
 <img src="https://i.imgur.com/zmyCdqY.png"/>
 </p>
 
-Next, click the gear icon in the upper right, and select "Edit Dashboard"
-<p align="center">
-<img src="https://i.imgur.com/zmyCdqY.png"/>
-</p>
-
 Click "Import"
 <p align="center">
 <img src="https://i.imgur.com/zmyCdqY.png"/>
