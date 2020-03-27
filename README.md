@@ -2,7 +2,7 @@
 
 In this Code Pattern we will show how to publish data stored within an Watson IOT Platform Analytics instance to an external service. Once the data is analyzed by the service, the results can then be persisted in the Analytics Platform database.
 
-Our specific demonstrated use case here is to detect anomalies within a Maximo Asset Monitor dataset using a scikit-learn model, which is externally hosted in a Watson Machine Learning service. We'll also demonstrate how to visualize the anomalies over time via dashboards.
+Our specific demonstrated use case here is to detect anomalies within a Maximo Asset Monitor dataset using a scikit-learn model, which is externally hosted in a Watson Machine Learning service. We'll also demonstrate how to visualize correlations between anomalies via time-series graphs.
 
 When the reader has completed this Code Pattern, they will understand how to:
 
@@ -80,7 +80,7 @@ Select the pricing plan and click "Create". If deploying on an IBM Lite account,
 <img src="https://i.imgur.com/PMqMOnd.png">
 </p>
 
-Click on the "Service Credentials" section. Copy and paste the generated credentials, and place them into a file in the root directory of this project titled "wml_credentials.json"
+Click on the "Service Credentials" section. Copy and paste the generated credentials, and place them into a file in the root directory of this project titled "wml_credentials.json".
 <p align="center">
 <img src="https://i.imgur.com/HpB3x7T.png"/>
 </p>
@@ -150,7 +150,7 @@ git clone git@github.com:IBM/maximo-anomaly.git
 cd maximo-anomaly
 ```
 
-Instal virtualenv if you don't have it already
+Instal virtualenv (if you don't have it already)
 ```
 sudo pip install virtualenv
 ```
@@ -170,6 +170,12 @@ Activate your virtual environment
 ```
 source bin/activate
 ```
+
+Copy the `url`, `instance_id` and `apikey` values from your `wml_credentials.json` file into a .env file. Save these values as "WATSON_ML_ENDPOINT", "WATSON_ML_INSTANCE_ID", and "WATSON_ML_APIKEY", respectively.
+
+WATSON_ML_INSTANCE_ID="<instance_id>"
+WATSON_ML_ENDPOINT="<url_value>"
+WATSON_ML_APIKEY="<apikey_value>"
 
 
 ### Install dependencies
@@ -237,23 +243,32 @@ Set the PYTHONPATH to the root directory of this project
 export PYTHONPATH=$(pwd)
 ```
 
+Now we can begin running the python scripts. These scripts leverage the [iotfunctions](https://github.com/ibm-watson-iot/functions/tree/production) library to interact with the analytics service.
 
-Invoke the `register_entity.py` script. This script will create an Entity Type, and inject sample data for each metric column. This will also create an additional "anomaly_score" column where we can place the model results
+Invoke the `register_entity.py` script. In this context, an entity is a This script will create an Entity Type, and inject sample data for each metric column. This will also create an additional "anomaly_score" column where we can place the model results.
 
 ```
 python scripts/register_entity.py
 ```
 
-After the entity has been registered, we'll run the following script to build and publish a model based off our custom data.
+After the entity has been registered, we'll run the following script to build and publish a model based off our custom data. In this case, we'll be using an "[IsolationForest](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html)" anomaly detection model, which is included with the scikit-learn python package. In this case, the model will analyze each row and give the following output.
+
+`-1` if data in a row seems to be an outlier (anomaly detected).
+`1` if the row data seems to be an inlier (normal).
+
+The result will be placed in the "anomaly_score" column in each row.
 
 ```
 python scripts/register_model.py
 ```
 
+<!-- TODO explain  IsolationForest
+https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest
+Returns -1 for outliers and 1 for inliers. -->
 
-The output of the previous command should include a "deployment_id" and a "model_id". Place these into your .env file as "WATSON_ML_DEPLOYMENT_ID" and "WATSON_ML_MODEL_ID".
+The output of the previous command should include a "deployment_id". Place this into your `.env` file as "WATSON_ML_DEPLOYMENT_ID".
 
-After adding the WML credentials, we can test the registed function with the following command
+After adding the WML credentials, we can test the registered function with the following command
 
 ```
 python scripts/invoke_model_function.py

@@ -1,0 +1,60 @@
+{
+    "title": "Line Graph anomaly",
+    "cards": [
+        {
+            "content": {
+                "series": [
+                    {
+                        "dataSourceId": "speed",
+                        "label": "speed"
+                    },
+                    {
+                        "dataSourceId": "load",
+                        "label": "load"
+                    },
+                    {
+                        "dataSourceId": "torque",
+                        "label": "torque"
+                    },
+                    {
+                        "dataSourceId": "anomaly_score",
+                        "label": "anomaly_score"
+                    }
+                ]
+            },
+            "dataSource": {
+                "attributes": [
+                    {
+                        "aggregator": "max",
+                        "attribute": "speed",
+                        "id": "speed"
+                    },
+                    {
+                        "aggregator": "max",
+                        "attribute": "torque",
+                        "id": "torque"
+                    },
+                    {
+                        "aggregator": "max",
+                        "attribute": "load",
+                        "id": "load"
+                    },
+                    {
+                        "aggregator": "max",
+                        "attribute": "anomaly_score",
+                        "id": "anomaly_score"
+                    }
+                ],
+                "range": {
+                    "count": -3,
+                    "interval": "day"
+                },
+                "timeGrain": "hour"
+            },
+            "id": "speed_line",
+            "size": "LARGE",
+            "title": "speed_line",
+            "type": "TIMESERIES"
+        }
+    ]
+}

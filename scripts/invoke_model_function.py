@@ -25,26 +25,28 @@ db_schema = None #  set if you are not using the default
 
 # Credentials to access WML Model.
 WATSON_ML_ENDPOINT = settings.WATSON_ML_ENDPOINT
-WATSON_ML_MODEL_ID = settings.WATSON_ML_MODEL_ID
+WATSON_ML_INSTANCE_ID = settings.WATSON_ML_INSTANCE_ID
 WATSON_ML_APIKEY = settings.WATSON_ML_APIKEY
 WATSON_ML_DEPLOYMENT_ID = settings.WATSON_ML_DEPLOYMENT_ID
 
 IAM_UID = settings.IAM_UID
 IAM_PASSWORD = settings.IAM_PASSWORD
 
-MODEL_INPUT_COLUMNS = settings.MODEL_INPUT_COLUMNS
-
-
+MODEL_INPUT_COLUMNS = settings.MODEL_INPUT_COLUMNS or []
 if MODEL_INPUT_COLUMNS and (len(MODEL_INPUT_COLUMNS) > 0):
     MODEL_INPUT_COLUMNS = MODEL_INPUT_COLUMNS.replace(' ', '').split(',')
 else:
     MODEL_INPUT_COLUMNS = []
 
-entity_name = "kb_anomaly"
+if settings.ENTITYNAME:
+    entity_name = settings.ENTITYNAME
+else:
+    print("Please place ENTITY_NAME in .env file")
+    exit()
 
 entity = EntityType(entity_name, db,
                     # following columns can be dynamically generated based on meters associated with each asset
-                    Column('deviceid',String(50)),
+                    Column('deviceid' ,String(50)),
                     # Column('evt_timestamp',String(50)),
                     Column('anomaly_score', Integer()),
                     Column("torque", Integer()),
@@ -54,10 +56,8 @@ entity = EntityType(entity_name, db,
                     Column("speed", Float()),
                     Column("travel_time", Float()),
                     InvokeModel(
-                                    # uid=IAM_UID,
-                                    # password=IAM_PASSWORD,
                                     wml_endpoint=WATSON_ML_ENDPOINT,
-                                    model_id=WATSON_ML_MODEL_ID,
+                                    # model_id=WATSON_ML_MODEL_ID,
                                     deployment_id=WATSON_ML_DEPLOYMENT_ID,
                                     apikey=WATSON_ML_APIKEY,
                                     input_features=MODEL_INPUT_COLUMNS,
@@ -66,6 +66,7 @@ entity = EntityType(entity_name, db,
                       '_timestamp' : 'evt_timestamp',
                       '_db_schema' : db_schema}
 )
-job_settings = {'_production_mode': False}
-# entity.exec_local_pipeline(**job_settings)
 entity.exec_local_pipeline()
+
+# job_settings = {'_production_mode': False}
+# entity.exec_local_pipeline(**job_settings)

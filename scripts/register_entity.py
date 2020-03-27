@@ -11,6 +11,7 @@ from iotfunctions.bif import EntityDataGenerator
 from custom import settings
 import datetime as dt
 
+import sys
 import pandas as pd
 import numpy as np
 #EngineLogging.configure_console_logging(logging.DEBUG)
@@ -38,7 +39,11 @@ Create a database object to access Watson IOT Platform Analytics DB.
 db = Database(credentials = credentials)
 db_schema = None #  set if you are not using the default
 
-entity_name = 'kb_anomaly'
+if (len(sys.argv) > 0):
+    entity_name = sys.argv[1]
+else:
+    entity_name = 'kb_anomaly'
+
 entity = EntityType(entity_name, db,
                     Column('deviceid',String(50)),
                     Column('anomaly_score', Integer()),
@@ -64,8 +69,13 @@ entity.register(raise_error=False)
 print("Entity registered")
 
 # generate data and set anomaly_score to zeros
+print("Generating sample data")
 entity.generate_data(days=2.0, drop_existing=True)
 df = db.read_table(table_name=entity_name, schema=db_schema)
-df["anomaly_score"] = np.zeros(len(df))
+
+empty_columns = ["anomaly_score"]
+print("Setting " empty_columns.join(" ") "columns to zeros ")
+df[] = np.zeros(len(df))
 db.write_frame(df, table_name=entity_name, schema=db_schema, if_exists="replace")
 db.commit()
+print("DataFrame written to db")

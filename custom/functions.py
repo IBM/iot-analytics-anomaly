@@ -36,7 +36,7 @@ class InvokeModel(BasePreload):
 
     out_table_name = None
 
-    def __init__(self, wml_endpoint, model_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, instance_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
         if body is None:
             body = {}
@@ -61,7 +61,7 @@ class InvokeModel(BasePreload):
         # https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/ml-authentication.html
         self.uid = "bx"
         self.password = "bx"
-        self.model_id = model_id
+        self.instance_id = instance_id
         self.deployment_id = deployment_id
         self.apikey = apikey
         self.input_features = apikey
@@ -108,7 +108,7 @@ class InvokeModel(BasePreload):
             print("error retrieving IAM token")
             return None
 
-    def invoke_model(self, df, wml_endpoint, uid, password, model_id, deployment_id, apikey):
+    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
         logging.debug("posting enitity data to WML model")
@@ -127,7 +127,7 @@ class InvokeModel(BasePreload):
             # Send data to deployed model for processing
             headers = { "Content-Type" : "application/json",
                         "Authorization" : "Bearer " + iam_token,
-                        "ML-Instance-ID" : model_id }
+                        "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
             columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
             print("wml df.columns")
@@ -136,7 +136,8 @@ class InvokeModel(BasePreload):
             rows = [list(r) for i,r in s_df.iterrows()]
             payload = {"values": rows}
             # payload = {"values": df.to_dict()}
-            wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, model_id, deployment_id)
+            wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
+            # wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, model_id, deployment_id)
             # wml_model_endpoint = f'{wml_endpoint}/w3/wml_instances/{model_id}/deployments/{deployment_id}'
             r = requests.post( wml_model_endpoint, json=payload, headers=headers )
             logging.debug('model response code: ' + str(r.status_code) )
@@ -205,20 +206,24 @@ class InvokeModel(BasePreload):
         '''
         # Create a timeseries dataframe with data received from Maximo
         '''
-        logging.debug('response_data used to create dataframe ===' )
-        logging.debug( response_data)
-        if len(df) > 0:
-            df = pd.DataFrame(data=df)
-        else:
+        # logging.debug('response_data used to create dataframe ===' )
+        # logging.debug( response_data)
+        try df:
+            if len(df) > 0:
+                df = pd.DataFrame(data=df)
+            else:
+                table_data = self.db.read_table(table_name=table, schema=schema)
+                df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
+        except:
             # test case, pull all simulated data
-            table_data = self.db.read_table(table_name=table, schema=schema)
-            df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
-        logging.debug( "dataframe")
+            logging.debug("No new data received")
+            return True
+        logging.debug("dataframe")
         logging.debug( df)
         logging.debug( df.columns)
 
         # df = df.loc[0:99] # only for testing, reduce size of dataframe so we don't hit our WML quota as quickly
-        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.model_id, self.deployment_id, self.apikey)
+        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
@@ -318,13 +323,19 @@ class InvokeModel(BasePreload):
         #                       tags=['TEXT'],
         #                       required=True
         #                       ))
+        # inputs.append(ui.UISingle(name='model_id',
+        #                       datatype=str,
+        #                       description='Instance ID for WML model',
+        #                       tags=['TEXT'],
+        #                       required=True
+        #                       ))
         inputs.append(ui.UISingle(name='wml_endpoint',
                               datatype=str,
                               description='Endpoint to WML service where model is hosted',
                               tags=['TEXT'],
                               required=True
                               ))
-        inputs.append(ui.UISingle(name='model_id',
+        inputs.append(ui.UISingle(name='instance_id',
                               datatype=str,
                               description='Instance ID for WML model',
                               tags=['TEXT'],

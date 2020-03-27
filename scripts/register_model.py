@@ -29,12 +29,16 @@ db = Database(credentials = credentials)
 db_schema = None #  set if you are not using the default
 
 
-
 with open('credentials.json', encoding='utf-8') as F:
     credentials = json.loads(F.read())
 db = Database(credentials = credentials)
 db_schema = None #  set if you are not using the default
-entity_name = 'kb_anomaly'
+
+if settings.ENTITY_NAME:
+    entity_name = settings.ENTITY_NAME
+else:
+    print("Please place ENTITY_NAME in .env file")
+    exit()
 
 def register_custom_model_wml(df, columns=[]):
     # initialize WML client
@@ -63,30 +67,31 @@ def register_custom_model_wml(df, columns=[]):
         client.repository.ModelMetaNames.FRAMEWORK_VERSION: sk_version,
         client.repository.ModelMetaNames.NAME: 'anomaly_model',
         client.repository.ModelMetaNames.RUNTIME_NAME: 'python',
-        client.repository.ModelMetaNames.RUNTIME_VERSION: '3.5'
+        client.repository.ModelMetaNames.RUNTIME_VERSION: '3.6'
     }
     model_details_inmem = client.repository.store_model( pipeline, meta_props=metadata)
     model_id_inmem = model_details_inmem["metadata"]["guid"]
-    print("got model_id")
     deployment_details_inmem = client.deployments.create( artifact_uid=model_id_inmem, name="anomaly_model" )
     deployment_id = deployment_details_inmem["metadata"]["guid"]
     # Test model
     # data_to_post = {"values": rows}
-    # model_endpoint_url_inmem = client.deployments.get_scoring_url( deployment_details_inmem )
+    model_endpoint_url_inmem = client.deployments.get_scoring_url( deployment_details_inmem )
+    print(model_endpoint_url_inmem)
     # client.deployments.score( model_endpoint_url_inmem, data_to_post )
-    print("Place model id and deployment in .env file")
-    print("model_id: " + model_id)
+    print("Place below deployment id in .env file")
+    # print("model_id: " + model_id)
     print("deployment_id: " + deployment_id)
-    return (model_id, deployment_id)
+    return deployment_id
 
 print("loading entity data")
 df = db.read_table(table_name=entity_name, schema=db_schema)
 print("entity data loaded")
 columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
-model_id, deployment_id = register_custom_model_wml(df, columns)
+deployment_id = register_custom_model_wml(df, columns)
 
 
 '''
+# SROM registration
 def register_custom_model_srom(df):
     # directions found here https://github.ibm.com/srom/workshop-docs/blob/master/notebooks/auto_regression/auto_regression.ipynb
     url = "https://github.ibm.com/srom/srom/blob/master/srom/anomaly_detection/generalized_anomaly_model.py"
