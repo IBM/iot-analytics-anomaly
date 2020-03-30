@@ -231,13 +231,32 @@ If you've created a custom fork of this repo, modify your .custom/functions.py t
 
 `PACKAGE_URL = 'git+https://github.com/ibm/maximo-anomaly@'`
 
-<!-- Change the class name if someone else has already published a function with the same name in your tenant function catalog. In this case, our class name is `InvokeExternalModel`.
+Change the class name if someone else has already published a function with the same name in your tenant function catalog. In this case, our default function name is `InvokeModel`.
+
+If there is already a function named as "InvokeModel", you'll need to change the function name
+
+For example, if you'd like your function name to be "CustomFunctionName", change the class name in (custom/functions.py)[https://github.com/IBM/iot-analytics-anomaly/blob/master/custom/functions.py#L30]
 
 ```
-class InvokeExternalModel(BasePreload):
-``` -->
+class CustomFunctionName(BasePreload):
+```
 
-Set the PYTHONPATH to the root directory of this project
+Also change the function name in the scripts at (scripts/invoke_model_function.py)[scripts/invoke_model_function.py#6], (scripts/register_entity.py)[scripts/register_entity.py#5], (scripts/register_model.py)[scripts/register_model.py#5],
+
+Change
+```
+from custom.functions import InvokeModel
+```
+
+To
+```
+from custom.functions import CustomFunctionName
+```
+
+
+
+
+Next, set the PYTHONPATH to the root directory of this project
 
 ```
 export PYTHONPATH=$(pwd)
@@ -245,18 +264,23 @@ export PYTHONPATH=$(pwd)
 
 Now we can begin running the python scripts. These scripts leverage the [iotfunctions](https://github.com/ibm-watson-iot/functions/tree/production) library to interact with the analytics service.
 
-Invoke the `register_entity.py` script. In this context, an entity is a This script will create an Entity Type, and inject sample data for each metric column. This will also create an additional "anomaly_score" column where we can place the model results.
+Invoke the `register_entity.py` script. In this context, an entity is any asset that can be tracked with data, such as a robot, truck, manufacturing belt, etc.
+
+This script will create an Entity Type, and inject sample data for each metric column. This will also create an empty "anomaly_score" column where we can place the results returned by the model invocation. Be sure to provide an argument here
 
 ```
-python scripts/register_entity.py
+python scripts/register_entity.py <entity_name>
 ```
 
-After the entity has been registered, we'll run the following script to build and publish a model based off our custom data. In this case, we'll be using an "[IsolationForest](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html)" anomaly detection model, which is included with the scikit-learn python package. In this case, the model will analyze each row and give the following output.
+After the entity has been registered, we'll run the following script to build and publish a model based off our custom data. In this case, we'll be using an "[IsolationForest](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html)" anomaly detection model, which is included with the scikit-learn python package. This model will read features from each row, and determine whether the row data is anomalous or not. A value of "-1" or "1" will be placed in the "anomaly_score" column in each row after the function runs.
 
-`-1` if data in a row seems to be an outlier (anomaly detected).
-`1` if the row data seems to be an inlier (normal).
+- `-1` if data in a row seems to be an outlier (anomaly detected).
+- `1` if the row data seems to be an inlier (normal).
 
-The result will be placed in the "anomaly_score" column in each row.
+
+By default, the model will observe all columns in the dataset. If you'd like to filter down to a specific set of columns, add a comma seperated list of the columns to your `.env` file like so `INPUT_COLUMNS='torque,acc,load,speed,tool_type,travel_time'`
+
+Then register a model with the following command
 
 ```
 python scripts/register_model.py

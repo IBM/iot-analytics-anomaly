@@ -39,10 +39,19 @@ Create a database object to access Watson IOT Platform Analytics DB.
 db = Database(credentials = credentials)
 db_schema = None #  set if you are not using the default
 
-if (len(sys.argv) > 0):
+if settings.ENTITY_NAME:
+    entity_name = settings.ENTITY_NAME
+elif (len(sys.argv) > 0):
     entity_name = sys.argv[1]
 else:
-    entity_name = 'kb_anomaly'
+    print("Please place ENTITY_NAME in .env file")
+    exit()
+
+
+# if (len(sys.argv) > 0):
+#     entity_name = sys.argv[1]
+# else:
+#     entity_name = 'kb_anomaly'
 
 entity = EntityType(entity_name, db,
                     Column('deviceid',String(50)),

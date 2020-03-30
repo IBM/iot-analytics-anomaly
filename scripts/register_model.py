@@ -36,9 +36,16 @@ db_schema = None #  set if you are not using the default
 
 if settings.ENTITY_NAME:
     entity_name = settings.ENTITY_NAME
+elif (len(sys.argv) > 0):
+    entity_name = sys.argv[1]
 else:
     print("Please place ENTITY_NAME in .env file")
     exit()
+
+if settings.INPUT_COLUMNS:
+    columns = settings.INPUT_COLUMNS
+else:
+    columns = ':'
 
 def register_custom_model_wml(df, columns=[]):
     # initialize WML client
@@ -50,17 +57,17 @@ def register_custom_model_wml(df, columns=[]):
     # place classifier in a sklearn "pipeline"
     pipeline = Pipeline( steps = [ ( "classifier", clf ) ] )
     # clean data, reduce to relevant input columns
-    s_df = df[columns]
+    if len(columns) < 0:
+        s_df = df[columns]
+    else:
+        s_df = df[:]
     # create list of df rows
     rows = [list(r) for i,r in s_df.iterrows()]
     # fit df rows in pipeline
     pipeline.fit(rows)
     # pipeline.predict(rows)
+
     # publish pipeline to WML
-    # client.runtimes.store({
-    #     client.runtimes.ConfigurationMetaNames.NAME: "test",
-    #     client.runtimes.ConfigurationMetaNames.PLATFORM: {"name": "python", "version": "3.5"}
-    # })
     sk_version = sklearn.__version__
     metadata = {
         client.repository.ModelMetaNames.FRAMEWORK_VERSION: 'scikit-learn',
@@ -76,17 +83,17 @@ def register_custom_model_wml(df, columns=[]):
     # Test model
     # data_to_post = {"values": rows}
     model_endpoint_url_inmem = client.deployments.get_scoring_url( deployment_details_inmem )
-    print(model_endpoint_url_inmem)
+    print("model invocation endpoint: " + model_endpoint_url_inmem)
     # client.deployments.score( model_endpoint_url_inmem, data_to_post )
-    print("Place below deployment id in .env file")
+    print("Place below line in .env file like so")
     # print("model_id: " + model_id)
-    print("deployment_id: " + deployment_id)
+    print("WATSON_ML_DEPLOYMENT_ID=" + deployment_id)
     return deployment_id
 
 print("loading entity data")
 df = db.read_table(table_name=entity_name, schema=db_schema)
 print("entity data loaded")
-columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
+# columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
 deployment_id = register_custom_model_wml(df, columns)
 
 

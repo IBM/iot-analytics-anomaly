@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, func
 from iotfunctions import bif
 from custom.functions import InvokeModel
@@ -38,11 +39,14 @@ if MODEL_INPUT_COLUMNS and (len(MODEL_INPUT_COLUMNS) > 0):
 else:
     MODEL_INPUT_COLUMNS = []
 
-if settings.ENTITYNAME:
-    entity_name = settings.ENTITYNAME
+if settings.ENTITY_NAME:
+    entity_name = settings.ENTITY_NAME
+elif (len(sys.argv) > 0):
+    entity_name = sys.argv[1]
 else:
     print("Please place ENTITY_NAME in .env file")
     exit()
+
 
 entity = EntityType(entity_name, db,
                     # following columns can be dynamically generated based on meters associated with each asset
@@ -57,10 +61,10 @@ entity = EntityType(entity_name, db,
                     Column("travel_time", Float()),
                     InvokeModel(
                                     wml_endpoint=WATSON_ML_ENDPOINT,
-                                    # model_id=WATSON_ML_MODEL_ID,
+                                    instance_id=WATSON_ML_INSTANCE_ID,
                                     deployment_id=WATSON_ML_DEPLOYMENT_ID,
                                     apikey=WATSON_ML_APIKEY,
-                                    input_features=MODEL_INPUT_COLUMNS,
+                                    input_columns=MODEL_INPUT_COLUMNS,
                                     output_item = 'anomaly_score_done'),
                     **{
                       '_timestamp' : 'evt_timestamp',

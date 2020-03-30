@@ -70,13 +70,14 @@ except Exception as ex:
 try:
     #  Credentials
     print("Loading WML Environment Variables")
-    # MODEL_URL = os.environ.get("MODEL_URL")
     IAM_UID= os.environ.get("IAM_UID")
     IAM_PASSWORD= os.environ.get("IAM_PASSWORD")
     WATSON_ML_ENDPOINT= os.environ.get("WATSON_ML_ENDPOINT")
     WATSON_ML_DEPLOYMENT_ID = os.environ.get("WATSON_ML_DEPLOYMENT_ID")
+    WATSON_ML_INSTANCE_ID = os.environ.get("WATSON_ML_INSTANCE_ID")
     WATSON_ML_APIKEY= os.environ.get("WATSON_ML_APIKEY")
     MODEL_INPUT_COLUMNS = os.environ.get("MODEL_INPUT_COLUMNS")
+    ENTITY_NAME = os.environ.get("ENTITY_NAME")
     # MODEL_OUTPUT_COLUMNS = os.environ.get("MODEL_OUTPUT_COLUMNS") # for multivariate output
     # WATSON_ML_MODEL_ID= os.environ.get("WATSON_ML_MODEL_ID")
 

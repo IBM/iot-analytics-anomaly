@@ -36,7 +36,7 @@ class InvokeModel(BasePreload):
 
     out_table_name = None
 
-    def __init__(self, wml_endpoint, instance_id, deployment_id,apikey, input_features, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, instance_id, deployment_id,apikey, input_columns, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
         if body is None:
             body = {}
@@ -64,7 +64,7 @@ class InvokeModel(BasePreload):
         self.instance_id = instance_id
         self.deployment_id = deployment_id
         self.apikey = apikey
-        self.input_features = apikey
+        self.input_columns = apikey
 
 
 
@@ -108,7 +108,7 @@ class InvokeModel(BasePreload):
             print("error retrieving IAM token")
             return None
 
-    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey):
+    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey, input_columns):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
         logging.debug("posting enitity data to WML model")
@@ -129,17 +129,16 @@ class InvokeModel(BasePreload):
                         "Authorization" : "Bearer " + iam_token,
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
-            columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
-            print("wml df.columns")
-            print(df.columns)
+            columns = input_columns or ':' # ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
             s_df = df[columns]
+            print("filtering columns from")
+            print(df.columns)
+            print(s_df.columns)
             rows = [list(r) for i,r in s_df.iterrows()]
             payload = {"values": rows}
-            # payload = {"values": df.to_dict()}
             wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
-            # wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, model_id, deployment_id)
-            # wml_model_endpoint = f'{wml_endpoint}/w3/wml_instances/{model_id}/deployments/{deployment_id}'
             r = requests.post( wml_model_endpoint, json=payload, headers=headers )
+            # should return json containing same number of predictions
             logging.debug('model response code: ' + str(r.status_code) )
             if r.status_code == 200:
                 logging.debug('model response')
@@ -208,21 +207,23 @@ class InvokeModel(BasePreload):
         '''
         # logging.debug('response_data used to create dataframe ===' )
         # logging.debug( response_data)
-        try df:
-            if len(df) > 0:
+        try:
+            if (df and len(df) > 0):
                 df = pd.DataFrame(data=df)
-            else:
-                table_data = self.db.read_table(table_name=table, schema=schema)
-                df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
+            # else:
+            #     table_data = self.db.read_table(table_name=table, schema=schema)
+            #     df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
         except:
             # test case, pull all simulated data
             logging.debug("No new data received")
             return True
         logging.debug("dataframe")
-        logging.debug( df)
-        logging.debug( df.columns)
+        logging.debug(df)
+        logging.debug(df.columns)
 
         # df = df.loc[0:99] # only for testing, reduce size of dataframe so we don't hit our WML quota as quickly
+        # idx = len(df) - 10
+        # df = df.loc[(len(df) - 10):]
         results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
@@ -353,7 +354,7 @@ class InvokeModel(BasePreload):
                               tags=['TEXT'],
                               required=True
                               ))
-        inputs.append(ui.UISingle(name='input_features',
+        inputs.append(ui.UISingle(name='input_columns',
                               datatype=str,
                               description='Features to load from entity rows',
                               tags=['TEXT'],

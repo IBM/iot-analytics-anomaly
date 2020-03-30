@@ -4,6 +4,8 @@ custom/*pycache*
 *.pyc
 env
 credentials.json
+wml_credentials.json
 run.log
 srom*
 scripts/notes.py
+scripts/register_model_wml.py
