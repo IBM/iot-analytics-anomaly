@@ -108,7 +108,7 @@ class InvokeModel(BasePreload):
             print("error retrieving IAM token")
             return None
 
-    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey, input_columns):
+    def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey, input_columns=[]):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
         logging.debug("posting enitity data to WML model")
@@ -129,11 +129,15 @@ class InvokeModel(BasePreload):
                         "Authorization" : "Bearer " + iam_token,
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
-            columns = input_columns or ':' # ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
-            s_df = df[columns]
-            print("filtering columns from")
-            print(df.columns)
-            print(s_df.columns)
+            # TODO, uncomment this when INPUT_COLUMNS working
+            input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
+            if len(input_columns) > 0:
+                s_df = df[input_columns]
+                print("filtering columns")
+                print(df.columns)
+                print(s_df.columns)
+            else:
+                s_df = df
             rows = [list(r) for i,r in s_df.iterrows()]
             payload = {"values": rows}
             wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
@@ -207,16 +211,21 @@ class InvokeModel(BasePreload):
         '''
         # logging.debug('response_data used to create dataframe ===' )
         # logging.debug( response_data)
+        '''
         try:
             if (df and len(df) > 0):
                 df = pd.DataFrame(data=df)
-            # else:
-            #     table_data = self.db.read_table(table_name=table, schema=schema)
-            #     df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
+            else:
+                table_data = self.db.read_table(table_name=table, schema=schema)
+                df = pd.DataFrame(data=table_data).tail() # TODO, shouldn't have to query table, df generally holds the
         except:
             # test case, pull all simulated data
             logging.debug("No new data received")
             return True
+        '''
+        table_data = self.db.read_table(table_name=table, schema=schema)
+        df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
+        num_rows = len(df)
         logging.debug("dataframe")
         logging.debug(df)
         logging.debug(df.columns)
@@ -224,18 +233,23 @@ class InvokeModel(BasePreload):
         # df = df.loc[0:99] # only for testing, reduce size of dataframe so we don't hit our WML quota as quickly
         # idx = len(df) - 10
         # df = df.loc[(len(df) - 10):]
-        results = self.invoke_model(df, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
+        window_size = 100
+        # TODO, add logic to only send rows that don't have any score yet
+        results = self.invoke_model(df.loc[num_rows - 100:num_rows], self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
             # df.head()["anomaly_score"] =
             # df.loc[0:4,col_indexer]
-            df.loc[:, 'anomaly_score'] = results['values']
+
+            # df.loc[:, 'anomaly_score'] = results['values']
+            df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
         else:
             logging.error('error invoking external model')
         # logging.debug("exiting after model invoked")
         # return True
-
+        print("updated scores")
+        print(df.loc[num_rows - 100:num_rows, 'anomaly_score'])
         logging.debug('Generated DF from response_data ===' )
         logging.debug( df.head() )
         df = df.rename(self.column_map, axis='columns')
@@ -246,6 +260,7 @@ class InvokeModel(BasePreload):
         # Fill in missing columns with nulls
         '''
         required_cols = self.db.get_column_names(table = table, schema=schema)
+
         # if "anomaly_score" not in required_cols:
         #     required_cols.append('anomaly_score') # TODO, hacky way to add column
         logging.debug('required_cols %s' %required_cols )
@@ -281,7 +296,7 @@ class InvokeModel(BasePreload):
         # Or write to seperate table
         logging.debug('df.columns')
         logging.debug(df.columns)
-        if_exists_action = "append" #"replace" # TODO, options are append and replace.
+        if_exists_action = "replace" # options are append and replace. as new data comes in we should "append"
         self.write_frame(df=df, table_name=table.lower(), if_exists=if_exists_action)
 
         # anomaly_table = "anomalies"
