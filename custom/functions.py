@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
 
-class InvokeModel(BasePreload):
+class InvokeMLModel(BasePreload):
 # class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
@@ -251,10 +251,8 @@ class InvokeModel(BasePreload):
         print("updated scores")
         print(df.loc[num_rows - 100:num_rows, 'anomaly_score'])
         logging.debug('Generated DF from response_data ===' )
-        logging.debug( df.head() )
         df = df.rename(self.column_map, axis='columns')
         logging.debug('ReMapped DF ===' )
-        logging.debug( df.head() )
 
         '''
         # Fill in missing columns with nulls
@@ -297,7 +295,7 @@ class InvokeModel(BasePreload):
         logging.debug('df.columns')
         logging.debug(df.columns)
         if_exists_action = "replace" # options are append and replace. as new data comes in we should "append"
-        self.write_frame(df=df, table_name=table.lower(), if_exists=if_exists_action)
+        self.write_frame(df, table_name=table.lower(), if_exists=if_exists_action)
 
         # anomaly_table = "anomalies"
         # self.db.create(anomaly_table)
