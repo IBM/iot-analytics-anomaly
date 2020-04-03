@@ -129,11 +129,12 @@ class InvokeMLModelTurbine(BasePreload):
                         "Authorization" : "Bearer " + iam_token,
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
-            # TODO, uncomment this when INPUT_COLUMNS working
+            # TODO
             #input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
-            input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
+            # input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
             if len(input_columns) > 0:
                 logging.debug("filtering columns")
+                logging.debug(self.input_columns)
                 s_df = df[input_columns]
                 print(df.columns)
                 print(s_df.columns)
@@ -190,27 +191,9 @@ class InvokeMLModelTurbine(BasePreload):
             schema= schema,
             exclude_cols = []
         )
-        # TODO, can't we also get calculated metrics?
-        # logging.debug('all metrics %s ' %metrics)
-
-        # TODO, grabbing all table data for now, add logic to break up by entity id and use start/end_ts values.
-        # rows = len(buildings)
-
-        # for m in metrics:
-        #     logging.debug('metrics %s ' %m)
-        #     # response_data[m] = np.random.normal(0,1,rows)
-        #     logging.debug('metrics data %s ' %response_data[m])
-        #
-        # for d in dates:
-        #     logging.debug('dates %s ' %d)
-        #     response_data[d] = dt.datetime.utcnow() - dt.timedelta(seconds=15)
-        #     logging.debug('dates data %s ' %response_data[d])
-
         '''
         # Create a timeseries dataframe with data received from Maximo
         '''
-        # logging.debug('response_data used to create dataframe ===' )
-        # logging.debug( response_data)
         '''
         try:
             if (df and len(df) > 0):
