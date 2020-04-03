@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
 
-class InvokeMLModel(BasePreload):
+class InvokeMLModelTurbine(BasePreload):
 # class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
@@ -133,8 +133,8 @@ class InvokeMLModel(BasePreload):
             #input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
             input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
             if len(input_columns) > 0:
+                logging.debug("filtering columns")
                 s_df = df[input_columns]
-                print("filtering columns")
                 print(df.columns)
                 print(s_df.columns)
             else:
