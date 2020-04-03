@@ -130,7 +130,8 @@ class InvokeMLModel(BasePreload):
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
             # TODO, uncomment this when INPUT_COLUMNS working
-            input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
+            #input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
+            input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
             if len(input_columns) > 0:
                 s_df = df[input_columns]
                 print("filtering columns")
@@ -165,7 +166,6 @@ class InvokeMLModel(BasePreload):
         logging.debug('entity_type')
         logging.debug(entity_type)
         self.db = entity_type.db
-        logging.debug('entity db')
         # encoded_body = json.dumps(self.body).encode('utf-8')
         # encoded_headers = json.dumps(self.headers).encode('utf-8')
 
@@ -239,9 +239,6 @@ class InvokeMLModel(BasePreload):
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
-            # df.head()["anomaly_score"] =
-            # df.loc[0:4,col_indexer]
-
             # df.loc[:, 'anomaly_score'] = results['values']
             df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
         else:
