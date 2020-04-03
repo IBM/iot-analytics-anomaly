@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
 
-class InvokeMLModelTurbine(BasePreload):
+class InvokeModel(BasePreload):
 # class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
@@ -93,20 +93,6 @@ class InvokeMLModelTurbine(BasePreload):
             logging.debug(r.text)
             return []
     '''
-
-    def get_iam_token(self, uid, password):
-        logging.debug("getting IAM token")
-        url     = "https://iam.bluemix.net/oidc/token"
-        headers = { "Content-Type" : "application/x-www-form-urlencoded" }
-        data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
-        r = requests.post( url, headers=headers, data=data, auth=( uid, password ) )
-        if r.status_code == 200:
-            iam_token = r.json()["access_token"]
-            print("token received")
-            return iam_token
-        else:
-            print("error retrieving IAM token")
-            return None
 
     def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey, input_columns=[]):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
@@ -216,14 +202,19 @@ class InvokeMLModelTurbine(BasePreload):
         # df = df.loc[0:99] # only for testing, reduce size of dataframe so we don't hit our WML quota as quickly
         # idx = len(df) - 10
         # df = df.loc[(len(df) - 10):]
+
+        # get index of rows that don't have an anomaly_score
+        unscored_rows_idx = df.loc[df['anomaly_score'] == 0, :].index
+        unscored_rows = df.iloc[unscored_rows_idx]
         window_size = 100
         # TODO, add logic to only send rows that don't have any score yet
-        results = self.invoke_model(df.loc[num_rows - 100:num_rows], self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
+        results = self.invoke_model(unscored_rows, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey)
         if results:
             logging.debug('results %s' %results )
             # TODO append results to entity table as additional column
             # df.loc[:, 'anomaly_score'] = results['values']
-            df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
+            # df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
+            df.loc[unscored_rows_idx, 'anomaly_score'] = results['values']
         else:
             logging.error('error invoking external model')
         # logging.debug("exiting after model invoked")
