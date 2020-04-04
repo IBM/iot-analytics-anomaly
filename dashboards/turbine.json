@@ -1,0 +1,71 @@
+{
+    "title": "Line Graph anomaly",
+    "cards": [
+        {
+          "content": {
+              "series": [{
+                      "dataSourceId": "drvn_flow",
+                      "label": "drvn_flow"
+                  },
+                  {
+                      "dataSourceId": "anomaly_score",
+                      "label": "anomaly_score"
+                  },
+                  {
+                      "dataSourceId": "drvn_t1",
+                      "label": "drvn_t1"
+                  },
+                  {
+                      "dataSourceId": "drvn_flow",
+                      "label": "drvn_flow"
+                  },
+                  {
+                      "dataSourceId": "drvn_p1",
+                      "label": "drvn_p1"
+                  }
+              ],
+              "xLabel": "X axis",
+              "yLabel": "Y axis",
+              "unit": "mph",
+              "timeDataSourceId": "evt_timestamp"
+          },
+            "dataSource": {
+              "attributes": [{
+                      "aggregator": "max",
+                      "attribute": "drvn_flow",
+                      "id": "drvn_flow"
+                  },
+                  {
+                      "aggregator": "max",
+                      "attribute": "anomaly_score",
+                      "id": "anomaly_score"
+                  },
+                  {
+                      "aggregator": "max",
+                      "dataSourceId": "drvn_t1",
+                      "label": "drvn_t1"
+                  },
+                  {
+                      "aggregator": "max",
+                      "dataSourceId": "drvn_flow",
+                      "label": "drvn_flow"
+                  },
+                  {
+                      "aggregator": "max",
+                      "dataSourceId": "drvn_p1",
+                      "label": "drvn_p1"
+                  }
+                ],
+                "range": {
+                    "count": -30,
+                    "interval": "hour"
+                },
+                "timeGrain": "day"
+            },
+            "id": "speed_line",
+            "size": "LARGE",
+            "title": "speed_line",
+            "type": "TIMESERIES"
+        }
+    ]
+}

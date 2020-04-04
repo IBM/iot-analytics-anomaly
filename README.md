@@ -286,10 +286,6 @@ Then register a model with the following command
 python scripts/register_model.py
 ```
 
-<!-- TODO explain  IsolationForest
-https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html#sklearn.ensemble.IsolationForest
-Returns -1 for outliers and 1 for inliers. -->
-
 The output of the previous command should include a "deployment_id". Place this into your `.env` file as "WATSON_ML_DEPLOYMENT_ID".
 
 After adding the WML credentials, we can test the registered function with the following command

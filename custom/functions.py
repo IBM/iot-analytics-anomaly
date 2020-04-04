@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
 
-class InvokeWMLModel(BasePreload):
+class IsolationForestModel(BasePreload):
 # class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
@@ -64,7 +64,7 @@ class InvokeWMLModel(BasePreload):
         self.instance_id = instance_id
         self.deployment_id = deployment_id
         self.apikey = apikey
-        self.input_columns = apikey
+        self.input_columns = input_columns
 
 
 
@@ -211,7 +211,8 @@ class InvokeWMLModel(BasePreload):
         # TODO, add logic to only send rows that don't have any score yet
         results = self.invoke_model(unscored_rows, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey, self.input_columns)
         if results:
-            logging.debug('results %s' %results )
+            # logging.debug('results %s' %results[''] )
+            logging.debug('results received' )
             # TODO append results to entity table as additional column
             # df.loc[:, 'anomaly_score'] = results['values']
             # df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
@@ -221,7 +222,9 @@ class InvokeWMLModel(BasePreload):
         # logging.debug("exiting after model invoked")
         # return True
         print("updated scores")
-        print(df.loc[num_rows - 100:num_rows, 'anomaly_score'])
+        logging.debug('results received %s', unscored_rows)
+
+        print(df.loc[num_rows - 10:num_rows, 'anomaly_score'])
         logging.debug('Generated DF from response_data ===' )
         df = df.rename(self.column_map, axis='columns')
         logging.debug('ReMapped DF ===' )
