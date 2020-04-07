@@ -193,7 +193,7 @@ class IsolationForestModel(BasePreload):
             logging.debug("No new data received")
             return True
         '''
-        table_data = self.db.read_table(table_name=table, schema=schema)
+        table_data = self.db.read_table(table_name=table, schema=schema) # start_ts, end_ts
         df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
         num_rows = len(df)
         logging.debug("dataframe")
@@ -204,11 +204,18 @@ class IsolationForestModel(BasePreload):
         # idx = len(df) - 10
         # df = df.loc[(len(df) - 10):]
 
-        if 'anomaly_score' not in df.columns:
-            df['anomaly_score'] = np.zeros(len(df))
+
+
+        # self.output_item
+        # if 'anomaly_score' not in df.columns:
+        #     df['anomaly_score'] = np.zeros(len(df))
+
+        if self.output_item not in df.columns:
+            df[self.output_item] = np.zeros(len(df))
 
         # get index of rows that don't have an anomaly_score
-        unscored_rows_idx = df.loc[df['anomaly_score'] == 0, :].index
+        # unscored_rows_idx = df.loc[df['anomaly_score'] == 0, :].index
+        unscored_rows_idx = df.loc[df[self.output_item] == 0, :].index
         unscored_rows = df.iloc[unscored_rows_idx]
         window_size = 100
         # TODO, add logic to only send rows that don't have any score yet
@@ -218,11 +225,10 @@ class IsolationForestModel(BasePreload):
             logging.debug('results received' )
             # TODO append results to entity table as additional column
             # df.loc[:, 'anomaly_score'] = results['values']
-            # df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
-            df.loc[unscored_rows_idx, 'anomaly_score'] = results['values']
+            # df.loc[unscored_rows_idx, 'anomaly_score'] = results['values']
+            df.loc[unscored_rows_idx, self.output_score] = results['values']
         else:
             logging.error('error invoking external model')
-        # logging.debug("exiting after model invoked")
         # return True
         print("updated scores")
         logging.debug('results received %s', unscored_rows)
