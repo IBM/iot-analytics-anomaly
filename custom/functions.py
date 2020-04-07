@@ -204,6 +204,9 @@ class IsolationForestModel(BasePreload):
         # idx = len(df) - 10
         # df = df.loc[(len(df) - 10):]
 
+        if 'anomaly_score' not in df.columns:
+            df['anomaly_score'] = np.zeros(len(df))
+
         # get index of rows that don't have an anomaly_score
         unscored_rows_idx = df.loc[df['anomaly_score'] == 0, :].index
         unscored_rows = df.iloc[unscored_rows_idx]
@@ -344,7 +347,7 @@ class IsolationForestModel(BasePreload):
                               ))
         inputs.append(ui.UISingle(name='input_columns',
                               datatype=str,
-                              description='Features to load from entity rows',
+                              description='Features to load from entity rows. Provide as list of comma seperated values like so - torque,speed,pressure',
                               tags=['TEXT'],
                               required=True
                               ))
