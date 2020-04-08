@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
 
-class IsolationForestModelWML(BasePreload):
+
+class IsolationForestModelWMLTest(BasePreload):
 # class IsolationForestModel(BaseTransformer):
 
     '''
@@ -36,18 +37,19 @@ class IsolationForestModelWML(BasePreload):
 
     # out_table_name = None
 
-    def __init__(self, input_items, wml_endpoint, instance_id, deployment_id,apikey, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    # def __init__(self,  wml_endpoint, instance_id, deployment_id,apikey, input_items, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
-        if body is None:
-            body = {}
+    def __init__(self,  wml_endpoint, instance_id, deployment_id,apikey, input_items, output_item  = 'http_preload_done'):
+        # if body is None:
+        #     body = {}
+        #
+        # if headers is None:
+        #     headers = {}
+        #
+        # if column_map is None:
+        #     column_map = {}
 
-        if headers is None:
-            headers = {}
-
-        if column_map is None:
-            column_map = {}
-
-        # super().__init__(dummy_items=[],output_item = output_item)
+        super().__init__(dummy_items=[],output_item = output_item)
         # self.input_item = "deviceid"
         self.output_item = output_item
 
@@ -69,8 +71,8 @@ class IsolationForestModelWML(BasePreload):
         # self.input_columns = input_columns.replace(' ','').split(',')
         # logging.debug(input_columns)
         self.input_items = input_items #.replace(' ', '').split(',')
-        logging.debug('items %s', input_items.replace(' ', '').split(','))
-        # super().__init__()
+        logging.debug('items %s', input_items)
+        # super().__init__() # for BaseTransformer
         logging.debug('init done ')
 
 
@@ -156,11 +158,9 @@ class IsolationForestModelWML(BasePreload):
     def execute(self, df, start_ts = None,end_ts=None,entities=None):
         # TODO, set time range if not provided. Grab all rows within x hours
         logging.debug('in execution method')
-        df = df.copy()
-        df[self.output_item] = df[self.input_items[0]]
-        # for i,input_item in enumerate(self.input_items):
-
-        return df
+        # df = df.copy()
+        # df[self.output_item] = df[self.input_items[0]]
+        # return df
 
         entity_type = self.get_entity_type()
         logging.debug('entity_type')
