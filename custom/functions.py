@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Specify the URL to your package here.
 # This URL must be accessible via pip install
-PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
+PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@testing'
 
 
 class IsolationForestModelWMLTest1(BasePreload):
@@ -48,7 +48,7 @@ class IsolationForestModelWMLTest1(BasePreload):
         #
         # if column_map is None:
         #     column_map = {}
-
+        # logging.debug('body %s' %body)
         super().__init__(dummy_items=[],output_item = output_item)
         # self.input_item = "deviceid"
         self.output_item = output_item
