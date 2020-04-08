@@ -48,7 +48,8 @@ class TestTransformer(BaseTransformer):
         self.instance_id = instance_id
         self.deployment_id = deployment_id
         self.apikey = apikey
-        self.input_columns = input_items.replace(' ', '').split(',')
+        logging.debug('input_items %s' , input_items)
+        self.input_columns = input_items #.replace(' ', '').split(',')
         logging.debug("finished init")
 
 
@@ -104,7 +105,7 @@ class TestTransformer(BaseTransformer):
                 logging.error(r.text)
                 return None
 
-    def execute(self, df, start_ts = None,end_ts=None):
+    def execute(self, df, force_overwrite=True, start_ts = None,end_ts=None):
         # BaseTransformer()
         # TODO, set time range if not provided. Grab all rows within x hours
         logging.debug('in execution method')
@@ -159,12 +160,12 @@ class TestTransformer(BaseTransformer):
                     # output_item = 'output_item',
                     is_output_datatype_derived = True)
                 )
-        inputs.append(ui.UISingle(name='input_columns',
-                              datatype=str,
-                              description='Features to load from entity rows. Provide as list of comma seperated values like so - torque,speed,pressure',
-                              tags=['TEXT'],
-                              required=True
-                              ))
+        # inputs.append(ui.UISingle(name='input_columns',
+        #                       datatype=str,
+        #                       description='Features to load from entity rows. Provide as list of comma seperated values like so - torque,speed,pressure',
+        #                       tags=['TEXT'],
+        #                       required=True
+        #                       ))
 
         inputs.append(ui.UISingle(name='wml_endpoint',
                               datatype=str,
@@ -192,7 +193,7 @@ class TestTransformer(BaseTransformer):
                               ))
         # define arguments that behave as function outputs
         outputs=[]
-        outputs.append(ui.UIStatusFlag(name='output_items'))
+        outputs.append(ui.UISingle(name='output_items', datatype=float))
         return (inputs, outputs)
 
 
