@@ -11,6 +11,7 @@ import requests
 
 #from iotfunctions.base import BaseTransformer
 from iotfunctions.base import BasePreload
+from iotfunctions.base import BaseTransformer
 from iotfunctions import ui
 from iotfunctions.db import Database
 from iotfunctions import bif
@@ -26,39 +27,34 @@ logger = logging.getLogger(__name__)
 # This URL must be accessible via pip install
 PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@testing'
 
-
-class IsolationForestModelWMLTest1(BasePreload):
-# class IsolationForestModel(BaseTransformer):
-
+class IsolationForestModel(BasePreload):
+# class InvokeExternalModel(BaseTransformer):
     '''
     Load entity data, forward to a custom anomaly detection model hosted in Watson Machine Learning service.
     Response returns index of rows that are classified as an anomaly, as well as the confidence score
     '''
 
-    # out_table_name = None
+    out_table_name = None
 
-    # def __init__(self,  wml_endpoint, instance_id, deployment_id,apikey, input_items, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
+    def __init__(self, wml_endpoint, instance_id, deployment_id,apikey, input_columns, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
     # def __init__(self, model_url, headers = None, body = None, column_map = None, output_item  = 'http_preload_done'):
-    def __init__(self,  wml_endpoint, instance_id, deployment_id,apikey, input_items, output_item  = 'http_preload_done'):
-        # if body is None:
-        #     body = {}
-        #
-        # if headers is None:
-        #     headers = {}
-        #
-        # if column_map is None:
-        #     column_map = {}
-        # logging.debug('body %s' %body)
+        if body is None:
+            body = {}
+
+        if headers is None:
+            headers = {}
+
+        if column_map is None:
+            column_map = {}
+
         super().__init__(dummy_items=[],output_item = output_item)
-        # self.input_item = "deviceid"
-        self.output_item = output_item
 
         # create an instance variable with the IBM IOT Platform Analytics Service Function input arguments.
 
-        # self.body = body
-        # logging.debug('body %s' %body)
-        # self.column_map = column_map
-        # logging.debug('column_map %s' %column_map)
+        self.body = body
+        logging.debug('body %s' %body)
+        self.column_map = column_map
+        logging.debug('column_map %s' %column_map)
         self.wml_endpoint = wml_endpoint
         # self.uid = uid
         # self.password = password
@@ -68,12 +64,8 @@ class IsolationForestModelWMLTest1(BasePreload):
         self.instance_id = instance_id
         self.deployment_id = deployment_id
         self.apikey = apikey
-        # self.input_columns = input_columns.replace(' ','').split(',')
-        # logging.debug(input_columns)
-        self.input_items = input_items #.replace(' ', '').split(',')
-        logging.debug('items %s', input_items.replace(' ', '').split(','))
-        # super().__init__() # for BaseTransformer
-        logging.debug('init done ')
+        self.input_columns = input_columns.replace(' ', '').split(',')
+
 
 
     '''
@@ -130,23 +122,23 @@ class IsolationForestModelWMLTest1(BasePreload):
                 logging.debug("filtering columns")
                 logging.debug(self.input_columns)
                 s_df = df[input_columns]
-                logging.debug(df.columns)
-                logging.debug(s_df.columns)
+                print(df.columns)
+                print(s_df.columns)
             else:
                 logging.debug("no input columns provided, forwarding all")
                 s_df = df
             rows = [list(r) for i,r in s_df.iterrows()]
             payload = {"values": rows}
-            logging.debug('posting data to model')
             wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
             r = requests.post( wml_model_endpoint, json=payload, headers=headers )
             # should return json containing same number of predictions
             logging.debug('model response code: ' + str(r.status_code) )
             if r.status_code == 200:
-                logging.debug('received model response')
+                logging.debug('model response')
                 logging.debug(r.text)
                 j = r.json()
-                logging.debug('parsed response json')
+                logging.debug('json')
+                logging.debug(j)
                 return j
             else:
                 logging.error('error invoking model')
@@ -156,16 +148,13 @@ class IsolationForestModelWMLTest1(BasePreload):
             # print ( response.text )
 
     def execute(self, df, start_ts = None,end_ts=None,entities=None):
+        BaseTransformer()
         # TODO, set time range if not provided. Grab all rows within x hours
         logging.debug('in execution method')
-        # df = df.copy()
-        # df[self.output_item] = df[self.input_items[0]]
-        # return df
-
         entity_type = self.get_entity_type()
         logging.debug('entity_type')
         logging.debug(entity_type)
-        # self.db = entity_type.db
+        self.db = entity_type.db
         # encoded_body = json.dumps(self.body).encode('utf-8')
         # encoded_headers = json.dumps(self.headers).encode('utf-8')
 
@@ -187,7 +176,7 @@ class IsolationForestModelWMLTest1(BasePreload):
         response_data = {}
         (metrics,dates,categoricals,others) = self.db.get_column_lists_by_type(
             table = table,
-            schema = schema,
+            schema= schema,
             exclude_cols = []
         )
         '''
@@ -205,7 +194,7 @@ class IsolationForestModelWMLTest1(BasePreload):
             logging.debug("No new data received")
             return True
         '''
-        table_data = self.db.read_table(table_name=table, schema=schema) # start_ts, end_ts
+        table_data = self.db.read_table(table_name=table, schema=schema)
         df = pd.DataFrame(data=table_data) # TODO, shouldn't have to query table, df generally holds the
         num_rows = len(df)
         logging.debug("dataframe")
@@ -216,40 +205,34 @@ class IsolationForestModelWMLTest1(BasePreload):
         # idx = len(df) - 10
         # df = df.loc[(len(df) - 10):]
 
-
-
-        # self.output_item
-        # if 'anomaly_score' not in df.columns:
-        #     df['anomaly_score'] = np.zeros(len(df))
-
-        if self.output_item not in df.columns:
-            df[self.output_item] = np.zeros(len(df))
+        if 'anomaly_score' not in df.columns:
+            df['anomaly_score'] = np.zeros(len(df))
 
         # get index of rows that don't have an anomaly_score
-        # unscored_rows_idx = df.loc[df['anomaly_score'] == 0, :].index
-        unscored_rows_idx = df.loc[df[self.output_item] == 0, :].index
+        unscored_rows_idx = df.loc[df['anomaly_score'] == 0, :].index
         unscored_rows = df.iloc[unscored_rows_idx]
+        # df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
         window_size = 100
         # TODO, add logic to only send rows that don't have any score yet
-        results = self.invoke_model(unscored_rows, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey, self.input_items)
+        results = self.invoke_model(unscored_rows, self.wml_endpoint, self.uid, self.password, self.instance_id, self.deployment_id, self.apikey, self.input_columns)
         if results:
             # logging.debug('results %s' %results[''] )
             logging.debug('results received' )
             # TODO append results to entity table as additional column
             # df.loc[:, 'anomaly_score'] = results['values']
-            # df.loc[unscored_rows_idx, 'anomaly_score'] = results['values']
-            df.loc[unscored_rows_idx, self.output_item] = results['values']
+            # df.loc[num_rows - 100:num_rows, 'anomaly_score'] = results['values']
+            df.loc[unscored_rows_idx, 'anomaly_score'] = results['values']
         else:
             logging.error('error invoking external model')
+        # logging.debug("exiting after model invoked")
         # return True
         print("updated scores")
         logging.debug('results received %s', unscored_rows)
-
-        print(df.loc[num_rows - 10:num_rows, self.output_item])
+        logging.debug( results['values'][-1] )
+        print(df.loc[num_rows - 10:num_rows, 'anomaly_score'])
         logging.debug('Generated DF from response_data ===' )
         df = df.rename(self.column_map, axis='columns')
         logging.debug('ReMapped DF ===' )
-        return df
 
         '''
         # Fill in missing columns with nulls
@@ -292,7 +275,8 @@ class IsolationForestModelWMLTest1(BasePreload):
         logging.debug('df.columns')
         logging.debug(df.columns)
         if_exists_action = "replace" # options are append and replace. as new data comes in we should "append"
-        self.write_frame(df, table_name=table.lower(), if_exists=if_exists_action)
+
+        # self.write_frame(df, table_name=table.lower(), if_exists=if_exists_action)
 
         # anomaly_table = "anomalies"
         # self.db.create(anomaly_table)
@@ -309,6 +293,7 @@ class IsolationForestModelWMLTest1(BasePreload):
                                  log_method=logger.debug,
                                  **kwargs)
         logging.debug( "appended trace" )
+        # return results['values'][-1] #True
         return True
 
     '''
@@ -364,26 +349,13 @@ class IsolationForestModelWMLTest1(BasePreload):
                               tags=['TEXT'],
                               required=True
                               ))
-        # inputs.append(ui.UISingle(name='input_items',
-        #                       datatype=str,
-        #                       description='Features to load from entity rows. Provide as list of comma seperated values. Ex: torque,speed,pressure',
-        #                       tags=['TEXT'],
-        #                       required=True
-        #                       ))
-        inputs.append(ui.UIMultiItem(
-                            name = 'input_items',
-                            datatype=float,
-                            description = "Data items",
-                            # output_item = 'output_item',
-                            # is_output_datatype_derived = True)
-                                  ))
-
+        inputs.append(ui.UISingle(name='input_columns',
+                              datatype=str,
+                              description='Features to load from entity rows. Provide as list of comma seperated values like so - torque,speed,pressure',
+                              tags=['TEXT'],
+                              required=True
+                              ))
         # define arguments that behave as function outputs
         outputs=[]
-        # outputs.append(ui.UIStatusFlag(name='output_item'))
-        outputs.append(ui.UIFunctionOutSingle(
-                name = 'output_item',
-                datatype=float,
-                description='Output'
-                ))
+        outputs.append(ui.UIStatusFlag(name='output_item'))
         return (inputs, outputs)
