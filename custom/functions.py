@@ -43,6 +43,8 @@ class InvokeWMLModel(BaseTransformer):
         self._output_list = [output_items]
         logging.debug('output_items %s', output_items)
         logging.debug('input_items %s' , input_items)
+        input_items.sort()
+        logging.debug('sorted input_items %s' , input_items)
         self.input_columns = input_items #.replace(' ', '').split(',')
         self.wml_endpoint = wml_endpoint
         # https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/ml-authentication.html
