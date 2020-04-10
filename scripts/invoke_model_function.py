@@ -3,7 +3,7 @@ import logging
 import sys
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, func
 from iotfunctions import bif
-from custom.functions import InvokeModel
+from custom.functions import InvokeWMLModel
 from iotfunctions.metadata import EntityType
 from iotfunctions.db import Database
 from iotfunctions.base import BaseTransformer
@@ -33,11 +33,11 @@ WATSON_ML_DEPLOYMENT_ID = settings.WATSON_ML_DEPLOYMENT_ID
 IAM_UID = settings.IAM_UID
 IAM_PASSWORD = settings.IAM_PASSWORD
 
-MODEL_INPUT_COLUMNS = settings.MODEL_INPUT_COLUMNS or []
-if MODEL_INPUT_COLUMNS and (len(MODEL_INPUT_COLUMNS) > 0):
-    MODEL_INPUT_COLUMNS = MODEL_INPUT_COLUMNS.replace(' ', '').split(',')
+INPUT_ITEMS = settings.INPUT_ITEMS or []
+if INPUT_ITEMS and (len(INPUT_ITEMS) > 0):
+    INPUT_ITEMS = INPUT_ITEMS.replace(' ', '').split(',')
 else:
-    MODEL_INPUT_COLUMNS = []
+    INPUT_ITEMS = []
 
 if settings.ENTITY_NAME:
     entity_name = settings.ENTITY_NAME
@@ -49,23 +49,13 @@ else:
 
 
 entity = EntityType(entity_name, db,
-                    # following columns can be dynamically generated based on meters associated with each asset
-                    Column('deviceid' ,String(50)),
-                    # Column('evt_timestamp',String(50)),
-                    Column('anomaly_score', Integer()),
-                    Column("torque", Integer()),
-                    Column("acc", Integer()),
-                    Column("load", Integer()),
-                    Column("tool_type", Integer()),
-                    Column("speed", Float()),
-                    Column("travel_time", Float()),
-                    InvokeModel(
+                    InvokeWMLModel(
                                     wml_endpoint=WATSON_ML_ENDPOINT,
                                     instance_id=WATSON_ML_INSTANCE_ID,
                                     deployment_id=WATSON_ML_DEPLOYMENT_ID,
                                     apikey=WATSON_ML_APIKEY,
-                                    input_columns=MODEL_INPUT_COLUMNS,
-                                    output_item = 'anomaly_score_done'),
+                                    input_items=INPUT_ITEMS,
+                                    output_items = 'anomaly_score_done'),
                     **{
                       '_timestamp' : 'evt_timestamp',
                       '_db_schema' : db_schema}

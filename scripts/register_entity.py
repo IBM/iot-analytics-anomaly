@@ -55,7 +55,6 @@ else:
 
 entity = EntityType(entity_name, db,
                     Column('deviceid',String(50)),
-                    Column('anomaly_score', Integer()),
                     Column("torque", Integer()),
                     Column("acc", Integer()),
                     Column("load", Integer()),
@@ -70,7 +69,7 @@ entity = EntityType(entity_name, db,
 
 # db.unregister_functions(["InvokeExternalModel"])
 # exit()
-db.register_functions([InvokeModel])
+db.register_functions([InvokeWMLModel])
 # exit()
 print("Function registered")
 
@@ -80,11 +79,11 @@ print("Entity registered")
 # generate data and set anomaly_score to zeros
 print("Generating sample data")
 entity.generate_data(days=2.0, drop_existing=True)
-df = db.read_table(table_name=entity_name, schema=db_schema)
+# df = db.read_table(table_name=entity_name, schema=db_schema)
 
-empty_columns = ["anomaly_score"]
-print("Setting " empty_columns.join(" ") "columns to zeros ")
-df[] = np.zeros(len(df))
-db.write_frame(df, table_name=entity_name, schema=db_schema, if_exists="replace")
-db.commit()
-print("DataFrame written to db")
+# empty_columns = ["anomaly_score"]
+# print("Setting " + empty_columns.join(" ") "columns to zeros ")
+# df[empty_columns] = np.zeros(len(df))
+# db.write_frame(df, table_name=entity_name, schema=db_schema, if_exists="replace")
+# db.commit()
+# print("DataFrame written to db")
