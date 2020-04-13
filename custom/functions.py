@@ -80,17 +80,21 @@ class InvokeWMLModel(BaseTransformer):
             # TODO
             #input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
             # input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
-            if len(input_columns) > 0:
+            if len(input_columns) == 1:
                 logging.debug("filtering columns")
                 logging.debug(self.input_columns)
                 s_df = df[input_columns]
-                print(df.columns)
-                print(s_df.columns)
+                items = [[i] for r,i in s_df.iteritems() ]
+                # rows = [[i] for r,i in df['deviceid'].iteritems() ]
+                payload = {"values": items}
+            elif:
+                s_df = df[input_columns]
+                rows = [list(r) for i,r in s_df.iterrows()]
+                payload = {"values": rows}
             else:
                 logging.debug("no input columns provided, forwarding all")
                 s_df = df
-            rows = [list(r) for i,r in s_df.iterrows()]
-            payload = {"values": rows}
+
             wml_model_endpoint = '%s/v3/wml_instances/%s/deployments/%s/online' %(wml_endpoint, instance_id, deployment_id)
             r = requests.post( wml_model_endpoint, json=payload, headers=headers )
             # should return json containing same number of predictions
