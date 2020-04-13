@@ -43,9 +43,11 @@ else:
     exit()
 
 if settings.INPUT_COLUMNS:
-    columns = settings.INPUT_COLUMNS
+    columns = settings.INPUT_COLUMNS.replace(' ','').split(',')
 else:
-    columns = ':'
+    print("please place your input columns in the custom/.env file")
+    exit()
+    # columns = ':'
 
 def register_custom_model_wml(df, columns=[]):
     # initialize WML client
@@ -60,7 +62,9 @@ def register_custom_model_wml(df, columns=[]):
     if len(columns) < 0:
         s_df = df[columns]
     else:
-        s_df = df[:]
+        print("please specify your input columns")
+        exit()
+        # s_df = df[:]
     # create list of df rows
     rows = [list(r) for i,r in s_df.iterrows()]
     # fit df rows in pipeline
@@ -92,6 +96,10 @@ def register_custom_model_wml(df, columns=[]):
 
 print("loading entity data")
 df = db.read_table(table_name=entity_name, schema=db_schema)
+
+print("backing up data")
+df.to_csv(entity_name + '_backup.csv')
+
 print("entity data loaded")
 # columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
 deployment_id = register_custom_model_wml(df, columns)

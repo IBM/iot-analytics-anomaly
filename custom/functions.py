@@ -80,14 +80,14 @@ class InvokeWMLModel(BaseTransformer):
             # TODO
             #input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
             # input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
-            if len(input_columns) == 1:
+            if (len(input_columns) == 1):
                 logging.debug("filtering columns")
                 logging.debug(self.input_columns)
                 s_df = df[input_columns]
                 items = [[i] for r,i in s_df.iteritems() ]
                 # rows = [[i] for r,i in df['deviceid'].iteritems() ]
                 payload = {"values": items}
-            elif:
+            elif (len(input_columns) > 1):
                 s_df = df[input_columns]
                 rows = [list(r) for i,r in s_df.iterrows()]
                 payload = {"values": rows}
