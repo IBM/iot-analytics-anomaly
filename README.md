@@ -104,7 +104,7 @@ Once the service has been provisioned, select the "Get Started" button to enter 
 
 Once the Watson Studio dashboard has loaded, scroll to the "Projects" section and click "New Projects" to create a project.
 <p align="center">
-<img src="https://i.imgur.com/Rri6pLW.png">
+<img src="https://i.imgur.com/wPb5ynN.png">
 </p>
 
 Select a "Empty Project" as the project type
@@ -114,7 +114,7 @@ Select a "Empty Project" as the project type
 
 Enter a project name, and then click "Create"
 <p align="center">
-<img src="https://i.imgur.com/njqRCCE.png">
+<img src="https://i.imgur.com/GPeFT8C.png">
 </p>
 
 Once the project has been created, a dashboard showing all the project assets will be displayed.
@@ -219,13 +219,16 @@ python ./scripts/local_test_of_function.py
 
 Copy your Watson IOT Platform Service credentials into a `credentials.json` file
 
-Navigate to your Watson IOT Platform Analytics service.
+Navigate to your Watson IOT Platform Analytics service. This should be accessible at a url like so
 
 https://dashboard-us.connectedproducts.internetofthings.ibmcloud.com/preauth?tenantid=<tenant-id>
 
-Services > Watson IOT Platform Analytics > View Details > Copy to clipboard
+Expand the left menu,
 
-![credentials](./images/watson_iot_credentials.png)
+Click "Services" -> "Watson IOT Platform Analytics" -> "View Details" -> "Copy to clipboard"
+
+<!-- ![credentials](./images/watson_iot_credentials.png) -->
+<img src="https://i.imgur.com/CcE4aMl.png" />
 
 If you've created a custom fork of this repo, modify your .custom/functions.py to set your PACKAGE_URL as the forked Github repository. This is necessary because the Analytics Service will need to install the custom function via pip.
 
@@ -278,7 +281,7 @@ After the entity has been registered, we'll run the following script to build an
 - `1` if the row data seems to be an inlier (normal).
 
 
-By default, the model will observe all columns in the dataset. If you'd like to filter down to a specific set of columns, add a comma seperated list of the columns to your `.env` file like so `INPUT_COLUMNS='torque,acc,load,speed,tool_type,travel_time'`
+By default, the model will observe all columns in the dataset. If you'd like to filter down to a specific set of columns, add a comma separated list of the columns to your `.env` file like so `INPUT_COLUMNS='torque,acc,load,speed,tool_type,travel_time'`
 
 Then register a model with the following command
 
