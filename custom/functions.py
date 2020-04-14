@@ -84,9 +84,12 @@ class InvokeWMLModel(BaseTransformer):
                 logging.debug("filtering columns")
                 logging.debug(self.input_columns)
                 s_df = df[input_columns]
-                items = [[i] for r,i in s_df.iteritems() ]
+                # items = [[i] for r,i in s_df.iteritems() ]
+                rows = [list(r) for i,r in s_df.iterrows()]
                 # rows = [[i] for r,i in df['deviceid'].iteritems() ]
-                payload = {"values": items}
+                payload = {"values": rows}
+                logging.debug("payload")
+                logging.debug(payload)
             elif (len(input_columns) > 1):
                 s_df = df[input_columns]
                 rows = [list(r) for i,r in s_df.iterrows()]
