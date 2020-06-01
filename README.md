@@ -70,9 +70,9 @@ Navigate to the IBM Cloud dashboard at [https://cloud.ibm.com/](https://cloud.ib
 <img src="https://i.imgur.com/vFCHSF4.png">
 </p>
 
-Search for the "Watson Machine Learning" service and select the resulting icon
+Search for the "Watson Machine Learning" service and select the icon
 <p align="center">
-https://i.imgur.com/tk6umPY.png
+<img src="https://i.imgur.com/tk6umPY.png" />
 </p>
 
 Select the pricing plan and click "Create". If deploying on an IBM Lite account, be sure to select the free "Lite" plan
@@ -80,7 +80,7 @@ Select the pricing plan and click "Create". If deploying on an IBM Lite account,
 <img src="https://i.imgur.com/PMqMOnd.png">
 </p>
 
-Click on the "Service Credentials" section. Copy and paste the generated credentials, and place them into a file in the root directory of this project titled "wml_credentials.json".
+Click on the "Service Credentials" section. Copy and paste the generated credentials, and place them into a file in the `credentials` directory of this project as `wml_credentials.json`.
 <p align="center">
 <img src="https://i.imgur.com/HpB3x7T.png"/>
 </p>
@@ -146,8 +146,8 @@ Find your instance on the drop-down list, and then click "Select"
 
 Clone this repository
 ```
-git clone git@github.com:IBM/maximo-anomaly.git
-cd maximo-anomaly
+git clone https://github.com/IBM/iot-analytics-anomaly
+cd iot-analytics-anomaly
 ```
 
 Instal virtualenv (if you don't have it already)
@@ -166,17 +166,17 @@ Enter your Virtual Environment directory
 ```
 cd env
 ```
+
 Activate your virtual environment
 ```
 source bin/activate
 ```
 
-Copy the `url`, `instance_id` and `apikey` values from your `wml_credentials.json` file into a .env file. Save these values as "WATSON_ML_ENDPOINT", "WATSON_ML_INSTANCE_ID", and "WATSON_ML_APIKEY", respectively.
+<!-- Copy the `url`, `instance_id` and `apikey` values from your `wml_credentials.json` file into a .env file. Save these values as "WATSON_ML_ENDPOINT", "WATSON_ML_INSTANCE_ID", and "WATSON_ML_APIKEY", respectively.
 
 WATSON_ML_INSTANCE_ID="<instance_id>"
 WATSON_ML_ENDPOINT="<url_value>"
-WATSON_ML_APIKEY="<apikey_value>"
-
+WATSON_ML_APIKEY="<apikey_value>" -->
 
 ### Install dependencies
 ```
@@ -221,7 +221,7 @@ Copy your Watson IOT Platform Service credentials into a `credentials.json` file
 
 Navigate to your Watson IOT Platform Analytics service. This should be accessible at a url like so
 
-https://dashboard-us.connectedproducts.internetofthings.ibmcloud.com/preauth?tenantid=<tenant-id>
+`https://dashboard-us.connectedproducts.internetofthings.ibmcloud.com/preauth?tenantid={tenant-id}`
 
 Expand the left menu,
 
@@ -230,33 +230,33 @@ Click "Services" -> "Watson IOT Platform Analytics" -> "View Details" -> "Copy t
 <!-- ![credentials](./images/watson_iot_credentials.png) -->
 <img src="https://i.imgur.com/CcE4aMl.png" />
 
-If you've created a custom fork of this repo, modify your .custom/functions.py to set your PACKAGE_URL as the forked Github repository. This is necessary because the Analytics Service will need to install the custom function via pip.
 
-`PACKAGE_URL = 'git+https://github.com/ibm/maximo-anomaly@'`
+If you've created a custom fork of this repo, modify your .custom/functions.py to set your PACKAGE_URL as the forked Github repository. This is necessary because the Analytics Service will pip install the custom function from that url.
+
+`PACKAGE_URL = 'git+https://github.com/ibm/IBM/iot-analytics-anomaly'`
+
 
 Change the class name if someone else has already published a function with the same name in your tenant function catalog. In this case, our default function name is `InvokeModel`.
 
 If there is already a function named as "InvokeModel", you'll need to change the function name
 
-For example, if you'd like your function name to be "CustomFunctionName", change the class name in (custom/functions.py)[https://github.com/IBM/iot-analytics-anomaly/blob/master/custom/functions.py#L30]
+For example, if you'd like your function name to be "CustomFunctionName", change the class name in [custom/functions.py](https://github.com/IBM/iot-analytics-anomaly/blob/master/custom/functions.py#L28)
 
 ```
-class CustomFunctionName(BasePreload):
+class CustomFunctionName(BaseTransformer):
 ```
 
-Also change the function name in the scripts at (scripts/invoke_model_function.py)[scripts/invoke_model_function.py#6], (scripts/register_entity.py)[scripts/register_entity.py#5], (scripts/register_model.py)[scripts/register_model.py#5],
+<!-- Also change the function name in the scripts at [scripts/invoke_model_function.py](scripts/invoke_model_function.py#6), [scripts/register_entity.py](scripts/register_entity.py#5), [scripts/register_model.py](scripts/register_model.py#5),
 
 Change
 ```
-from custom.functions import InvokeModel
+from custom.functions import InvokeWMLModel
 ```
 
 To
 ```
 from custom.functions import CustomFunctionName
-```
-
-
+``` -->
 
 
 Next, set the PYTHONPATH to the root directory of this project
@@ -265,37 +265,67 @@ Next, set the PYTHONPATH to the root directory of this project
 export PYTHONPATH=$(pwd)
 ```
 
-Now we can begin running the python scripts. These scripts leverage the [iotfunctions](https://github.com/ibm-watson-iot/functions/tree/production) library to interact with the analytics service.
-
-Invoke the `register_entity.py` script. In this context, an entity is any asset that can be tracked with data, such as a robot, truck, manufacturing belt, etc.
-
-This script will create an Entity Type, and inject sample data for each metric column. This will also create an empty "anomaly_score" column where we can place the results returned by the model invocation. Be sure to provide an argument here
+Finally, create a `.env` file using the template in `custom/template.env` as a guide. The next step will require the following values to be set. Be sure to replace the example values with the values that correspond to your entity type.
 
 ```
+# Entity Values
+ENTITY_NAME="turbine_demo"
+ENTITY_IDS="73000,73001"
+INPUT_COLUMNS="drvn_flow,drvn_t1,drvn_t2,drvn_p1,drvn_p2"
+
+# Credentials
+MONITOR_CREDENTIALS_PATH="credentials/monitor-credentials.json"
+WML_CREDENTIALS_PATH="credentials/wml-credentials.json"
+```
+
+#### Run Notebook
+
+Now we can begin running the [generate_WML_model.ipynb](generate_WML_model.ipynb) notebook. This notebook leverages the [iotfunctions](https://github.com/ibm-watson-iot/functions/tree/production) library to interact with the analytics service.
+
+Run the following command
+```
+juypter-notebook
+```
+
+And access the notebook at [http://localhost:8888/notebooks/generate_WML_model.ipynb](http://localhost:8888/notebooks/generate_WML_model.ipynb)
+
+<!-- We'll begin by creating entities. In this context, an entity is any asset that can be tracked with data, such as a robot, truck, manufacturing belt, etc. If you do not already have an existing entity in your Maximo Monitor instance, invoke the `register_entity.py` script. -->
+
+<!-- This script will register a new entity Type, and inject sample data for each metric column. -->
+<!-- This will also create an empty "anomaly_score" column where we can place the results returned by the model invocation. Be sure to provide an argument here -->
+
+<!-- ```
 python scripts/register_entity.py <entity_name>
-```
+``` -->
 
-After the entity has been registered, we'll run the following script to build and publish a model based off our custom data. In this case, we'll be using an "[IsolationForest](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html)" anomaly detection model, which is included with the scikit-learn python package. This model will read features from each row, and determine whether the row data is anomalous or not. A value of "-1" or "1" will be placed in the "anomaly_score" column in each row after the function runs.
+<!-- The first 4 cells in the notebook are used to load python packages, and retrieve data from a specific entity type. -->
+
+<!-- Next we'll parse through the entity data to build and publish a model.  -->
+
+In this example, we'll use the notebook to build a ["IsolationForest"](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.IsolationForest.html) anomaly detection model, which is included with the scikit-learn python package. This model will read features from each row, and determine whether the row data is anomalous or not. A value of "-1" or "1" will be placed in the "anomaly_score" column in each row after the function runs.
 
 - `-1` if data in a row seems to be an outlier (anomaly detected).
 - `1` if the row data seems to be an inlier (normal).
 
+As the notebook runs, check the output of each cell to confirm no errors are being thrown.
 
-By default, the model will observe all columns in the dataset. If you'd like to filter down to a specific set of columns, add a comma separated list of the columns to your `.env` file like so `INPUT_COLUMNS='torque,acc,load,speed,tool_type,travel_time'`
+<!-- By default, the model will observe all columns in the dataset. If you'd like to filter down to a specific set of columns, add a comma separated list of the columns to your `.env` file like so `INPUT_COLUMNS='torque,acc,load,speed,tool_type,travel_time'` -->
 
-Then register a model with the following command
+<!-- Then register a model with the following cell
 
 ```
 python scripts/register_model.py
-```
+``` -->
 
-The output of the previous command should include a "deployment_id". Place this into your `.env` file as "WATSON_ML_DEPLOYMENT_ID".
+<!-- After the model is uploaded to WML, a "deployment_id" will be printed out. Place this into your `.env` file as "WATSON_ML_DEPLOYMENT_ID". -->
 
-After adding the WML credentials, we can test the registered function with the following command
+In the final cell, we can test the registered function.
 
-```
+<!-- After adding the WML credentials, we can test the registered function with the following command -->
+
+<!-- ```
 python scripts/invoke_model_function.py
-```
+``` -->
 
 
 <!-- ```
@@ -341,7 +371,7 @@ Then enter an output variable name and click "Create". The output variable is a 
 <img src="https://i.imgur.com/lWDsmKP.png"
 </p>
 
-In summary, the registered function will check for new data from the associated enitity instances every five minutes. The relevant columns (input_features) in the newly added data is then forwarded to the external ML model, and the result is stored in the "anomaly_results" column of the dataframe.
+In summary, the registered function will check for new data from the associated entity instances every five minutes. The relevant columns (input_features) in the newly added data is then forwarded to the external ML model, and the result is stored in the "anomaly_results" column of the dataframe.
 
 
 ## 5. Add alerts

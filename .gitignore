@@ -9,3 +9,7 @@ run.log
 srom*
 scripts/notes.py
 scripts/register_model_wml.py
+scripts
+local_test_of_function.py
+server.py
+credentials/*json

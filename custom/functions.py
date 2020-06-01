@@ -9,13 +9,11 @@ import json
 import base64
 import requests
 
-#from iotfunctions.base import BaseTransformer
 from iotfunctions.base import BasePreload
 from iotfunctions.base import BaseTransformer
 from iotfunctions import ui
 from iotfunctions.db import Database
 from iotfunctions import bif
-#import datetime as dt
 import datetime
 import urllib3
 import xml.etree.ElementTree as ET
@@ -25,41 +23,34 @@ logger = logging.getLogger(__name__)
 
 # Specify the URL to your package here.
 # This URL must be accessible via pip install
-PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly@'
-
+PACKAGE_URL = 'git+https://github.com/IBM/iot-analytics-anomaly'
 
 class InvokeWMLModel(BaseTransformer):
     # _allow_empty_df = True  # allow this task to run even if it receives no incoming data
     # produces_output_items = False  # this task does not contribute new data items
     # requires_input_items = True  # this task does not require dependent data items
 
-
-    # def __init__(self, ):
     def __init__(self, wml_endpoint, instance_id, deployment_id, apikey, input_items, output_items = 'http_preload_done'):
-        logging.debug("in init function")
+        logging.debug("Initializing")
         super().__init__()
         self.input_items = input_items
         self.output_items = output_items
         self._output_list = [output_items]
-        logging.debug('output_items %s', output_items)
-        logging.debug('input_items %s' , input_items)
         input_items.sort()
         logging.debug('sorted input_items %s' , input_items)
         self.input_columns = input_items #.replace(' ', '').split(',')
         self.wml_endpoint = wml_endpoint
-        # https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/ml-authentication.html
+        # auth as documented here https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/ml-authentication.html
         self.uid = "bx"
         self.password = "bx"
         self.instance_id = instance_id
         self.deployment_id = deployment_id
         self.apikey = apikey
-        logging.debug("finished init")
-
 
     def invoke_model(self, df, wml_endpoint, uid, password, instance_id, deployment_id, apikey, input_columns=[]):
         # Taken from https://github.ibm.com/Shuxin-Lin/anomaly-detection/blob/master/Invoke-WML-Scoring.ipynb
         # Get an IAM token from IBM Cloud
-        logging.debug("posting enitity data to WML model")
+        logging.debug("Posting enitity data to WML model")
         url     = "https://iam.bluemix.net/oidc/token"
         headers = { "Content-Type" : "application/x-www-form-urlencoded" }
         data    = "apikey=" + apikey + "&grant_type=urn:ibm:params:oauth:grant-type:apikey"
@@ -77,14 +68,10 @@ class InvokeWMLModel(BaseTransformer):
                         "Authorization" : "Bearer " + iam_token,
                         "ML-Instance-ID" : instance_id }
             logging.debug("posting to WML")
-            # TODO
-            #input_columns = ['torque', 'acc', 'load', 'speed', 'tool_type', 'travel_time']
-            # input_columns = ['drvn_flow', 'drvn_t1', 'drvn_t2', 'drvn_p1', 'drvn_p2']
             if (len(input_columns) == 1):
                 logging.debug("filtering columns")
                 logging.debug(self.input_columns)
                 s_df = df[input_columns]
-                # items = [[i] for r,i in s_df.iteritems() ]
                 rows = [list(r) for i,r in s_df.iterrows()]
                 # rows = [[i] for r,i in df['deviceid'].iteritems() ]
                 payload = {"values": rows}
@@ -116,7 +103,6 @@ class InvokeWMLModel(BaseTransformer):
                 return None
 
     def execute(self, df): # , force_overwrite=True, start_ts = None,end_ts=None):
-        # BaseTransformer()
         # TODO, set time range if not provided. Grab all rows within x hours
         logging.debug('in execution method')
         logging.debug('df.columns %s', df.columns)
