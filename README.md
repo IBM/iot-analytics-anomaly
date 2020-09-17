@@ -80,10 +80,12 @@ Select the pricing plan and click "Create". If deploying on an IBM Lite account,
 <img src="https://i.imgur.com/PMqMOnd.png">
 </p>
 
-Click on the "Service Credentials" section. Copy and paste the generated credentials, and place them into a file in the `credentials` directory of this project as `wml_credentials.json`.
+
+
+<!-- Click on the "Service Credentials" section. Copy and paste the generated credentials, and place them into a file in the `credentials` directory of this project as `wml_credentials.json`.
 <p align="center">
 <img src="https://i.imgur.com/HpB3x7T.png"/>
-</p>
+</p> -->
 
 Navigate back to the IBM Cloud catalog [https://cloud.ibm.com/catalog](https://cloud.ibm.com/catalog)
 
@@ -138,6 +140,45 @@ Find your instance on the drop-down list, and then click "Select"
 <p align="center">
 <img src="https://i.imgur.com/2ac59bH.png" />
 </p>
+
+After creating the Watson Machine Learning and Watson Studio instances, we'll then need to create a configuration file containing the authentication/project details.
+
+First, take note of the url of your Watson Studio instance. After the `/projects` endpoint, you'll  see a UUID for that particular project.
+<p align="center">
+<img src="https://i.imgur.com/N5pKDrC.png" />
+</p>
+
+Place the project uuid in a file titled `wml_credentials.json` like so
+```
+{
+  "project_id": "<project_uid>"
+}
+```
+
+Then generate an IBM Cloud API key (if you don't have one already). Begin by visiting the following url [https://cloud.ibm.com/iam/apikeys](https://cloud.ibm.com/iam/apikeys)
+
+Then click the blue button titled "Create an IBM Cloud API key"
+
+<p align="center">
+<img src="https://i.imgur.com/y4WX19C.png" />
+</p>
+
+Give the API key a name and click **Create**
+
+<p align="center">
+<img src="https://i.imgur.com/mJY22t3.png" />
+</p>
+
+Copy the API key and place it in the configuration file. The final `wml_credentials.json` file should then look like so
+
+```
+{
+ "url": "https://us-south.ml.cloud.ibm.com",
+ "project_id": "<project_uid>",
+ "apikey":"***********"
+}
+```
+
 
 
 ## 2. Setup your Python development environment
